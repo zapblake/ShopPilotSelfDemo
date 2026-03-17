@@ -79,6 +79,10 @@ export async function POST(request: NextRequest) {
           secure: false,
           auth: { user: smtpUser, pass: smtpPass },
         });
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://zapsight.us";
+        const statusUrl = `${appUrl}/preview-jobs/${job.id}`;
+
+        // 1. Notify Blake
         transporter
           .sendMail({
             from: smtpUser,
@@ -91,14 +95,41 @@ export async function POST(request: NextRequest) {
               `URL: ${url}`,
               `Email: ${email || "not provided"}`,
               `Job ID: ${job.id}`,
-              `Status Page: https://zapsight.us/preview-jobs/${job.id}`,
+              `Status Page: ${statusUrl}`,
               "",
               `Submitted at: ${new Date().toISOString()}`,
             ].join("\n"),
           })
           .catch((err: unknown) => {
-            logger.warn({ error: err }, "Failed to send notification email");
+            logger.warn({ error: err }, "Failed to send Blake notification email");
           });
+
+        // 2. Send merchant their preview link
+        if (email) {
+          transporter
+            .sendMail({
+              from: smtpUser,
+              to: email,
+              subject: `Your ZapSight preview for ${normalized.domain} is being built ✨`,
+              text: [
+                `Hi there,`,
+                ``,
+                `We're building your Shop Pilot preview for ${normalized.domain}.`,
+                ``,
+                `It takes about 30 seconds. You can watch it build here:`,
+                statusUrl,
+                ``,
+                `Once it's ready, you'll see what the AI shopping assistant looks like on your store — no install required.`,
+                ``,
+                `Questions? Reply to this email or book a call: https://calendly.com/blake-zapsight/30min`,
+                ``,
+                `— Blake at ZapSight`,
+              ].join("\n"),
+            })
+            .catch((err: unknown) => {
+              logger.warn({ error: err }, "Failed to send merchant preview email");
+            });
+        }
       }
     } catch (emailErr) {
       logger.warn({ error: emailErr }, "Failed to send notification email");
