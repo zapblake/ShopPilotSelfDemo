@@ -129,23 +129,54 @@ export function createRenderWorker() {
           }
         }
 
-        // 5. Create or update PreviewHost record
-        const hostname = `preview-${previewJobId}.zapsight.us`;
+        // 5. Create or update PreviewHost records
+        // Primary: preview-{jobId}.zapsight.us (direct jobId lookup)
+        const primaryHostname = `preview-${previewJobId}.zapsight.us`;
         await prisma.previewHost.upsert({
-          where: { hostname },
+          where: { hostname: primaryHostname },
           create: {
             previewJobId,
-            hostname,
+            hostname: primaryHostname,
             active: true,
             jobStatus: "PREVIEW_READY",
-            previewBaseUrl: `https://${hostname}`,
+            previewBaseUrl: `https://${primaryHostname}`,
           },
           update: {
             active: true,
             jobStatus: "PREVIEW_READY",
-            previewBaseUrl: `https://${hostname}`,
+            previewBaseUrl: `https://${primaryHostname}`,
           },
         });
+
+        // Secondary: {normalizedDomain-slug}.zapsight.us (friendly domain lookup)
+        // Derive slug: strip TLD, replace dots/hyphens with single hyphen, lowercase
+        const job = await prisma.previewJob.findUnique({ where: { id: previewJobId }, select: { normalizedDomain: true } });
+        if (job?.normalizedDomain) {
+          const domainSlug = job.normalizedDomain
+            .replace(/\.(myshopify\.com|com|net|org|io|co)$/, "")
+            .replace(/[^a-z0-9]/g, "-")
+            .replace(/-+/g, "-")
+            .replace(/^-|-$/g, "")
+            .slice(0, 40);
+          const friendlyHostname = `${domainSlug}.zapsight.us`;
+          if (friendlyHostname !== primaryHostname) {
+            await prisma.previewHost.upsert({
+              where: { hostname: friendlyHostname },
+              create: {
+                previewJobId,
+                hostname: friendlyHostname,
+                active: true,
+                jobStatus: "PREVIEW_READY",
+                previewBaseUrl: `https://${friendlyHostname}`,
+              },
+              update: {
+                active: true,
+                jobStatus: "PREVIEW_READY",
+                previewBaseUrl: `https://${friendlyHostname}`,
+              },
+            });
+          }
+        }
 
         // 6. Update job status to PREVIEW_READY
         await prisma.previewJob.update({
