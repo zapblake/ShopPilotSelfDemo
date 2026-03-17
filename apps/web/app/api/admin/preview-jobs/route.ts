@@ -24,6 +24,9 @@ export async function GET(request: NextRequest) {
       renderedPages: {
         select: { renderStatus: true },
       },
+      _count: {
+        select: { events: true },
+      },
     },
   });
 
@@ -45,6 +48,7 @@ export async function GET(request: NextRequest) {
       renderStatusSummary: job.renderedPages.length > 0
         ? [...new Set(job.renderedPages.map((rp) => rp.renderStatus))].join(", ")
         : "",
+      eventCount: job._count.events,
     }))
   );
 }

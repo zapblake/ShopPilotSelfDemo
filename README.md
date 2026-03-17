@@ -198,8 +198,51 @@ In production, `*.zapsight.us` DNS points to our Vercel deployment. The middlewa
 3. Render pages → RENDERING → PREVIEW_READY
 4. Click preview link on status page → see the store with ZapSight banner
 
-### Phase 4 TODOs
+## Phase 4: Widget Injection & Demo Mode
 
-- Widget injection and configuration
+### What's new
+
+- **Widget package** (`packages/widget`): types, config builder, HTML injector for the ZapSight AI assistant widget
+- **Widget injection**: preview pages now render with a fully interactive chat widget (launcher button, chat panel, demo badge)
+- **Config builder**: assembles `WidgetPreviewConfig` from PreviewJob, discovered pages, rendered page metadata — cached in `WidgetPreviewConfig` DB table
+- **Demo mode chat**: keyword-based heuristic responses for mattress/sleep, pricing, delivery, returns — no LLM needed
+- **Preview event tracking**: fire-and-forget event logging (`widget_loaded`, `widget_opened`, `message_sent`) to `PreviewEvent` table
+- **New API routes**:
+  - `POST /api/preview-events` — log widget interaction events
+  - `GET /api/preview/[jobId]/config?path=` — fetch/build widget config as JSON
+  - `GET /api/widget/preview-bundle.js` — placeholder bundle (widget is inline for now)
+- **Updated status page**: widget section showing config summary, event count, last event, config debug link
+- **Updated admin dashboard**: events column per job
+
+### Full demo flow
+
+1. Submit URL → job created (QUEUED)
+2. Crawl + classify → READY_FOR_RENDER
+3. Render pages → RENDERING → PREVIEW_READY
+4. Click preview link → see the store with ZapSight widget
+5. Click the chat launcher (bottom-right) → interactive demo chat
+6. Widget events tracked in DB (visible on status page)
+
+### How widget config is assembled
+
+1. Load PreviewJob with crawl runs, discovered pages, rendered pages, and existing widget config
+2. Build `pageContext` from the RenderedPage matching the current path
+3. Build `storeContext` from discovered pages (store name, product types, sample products)
+4. Generate `promptContext` string for the AI assistant
+5. Upsert config to `WidgetPreviewConfig` table for caching
+6. Return assembled config for injection
+
+### Preview event tracking
+
+The widget fires events via `POST /api/preview-events`:
+- `widget_loaded` — when the widget script initializes (includes pageType)
+- `widget_opened` — when the user clicks the chat launcher
+- `message_sent` — when the user sends a message (includes text)
+
+Events are stored in the `PreviewEvent` table with optional session ID support.
+
+### Phase 5 TODOs
+
+- Real LLM-powered chat responses via Claude API
 - Cloudflare integration for edge serving
 - Preview expiration and cleanup

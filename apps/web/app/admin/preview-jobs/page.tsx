@@ -13,6 +13,7 @@ interface JobSummary {
   crawlRun: { status: string; pageCount: number } | null;
   renderedPageCount: number;
   renderStatusSummary: string;
+  eventCount: number;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -88,6 +89,7 @@ export default function AdminPreviewJobsPage() {
                 <th className="px-4 py-3">Created</th>
                 <th className="px-4 py-3">Pages</th>
                 <th className="px-4 py-3">Rendered</th>
+                <th className="px-4 py-3">Events</th>
                 <th className="px-4 py-3">Preview</th>
                 <th className="px-4 py-3"></th>
               </tr>
@@ -119,6 +121,9 @@ export default function AdminPreviewJobsPage() {
                       "—"
                     )}
                   </td>
+                  <td className="px-4 py-3 text-gray-500">
+                    {job.eventCount > 0 ? job.eventCount : "—"}
+                  </td>
                   <td className="px-4 py-3">
                     {(job.status === "PREVIEW_READY" || job.status === "READY") ? (
                       <a
@@ -145,7 +150,7 @@ export default function AdminPreviewJobsPage() {
               ))}
               {jobs.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-gray-400">
+                  <td colSpan={9} className="px-4 py-8 text-center text-gray-400">
                     No jobs found
                   </td>
                 </tr>

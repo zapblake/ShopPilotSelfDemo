@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { getStorageAdapter } from "@zapsight/storage";
 import { getRenderedPageForPath, rewriteHtml } from "@zapsight/preview";
+import { buildWidgetConfig } from "@/lib/widget-config-builder";
+import { injectWidget } from "@/lib/widget-injector";
 import Link from "next/link";
 
 interface PreviewPageProps {
@@ -69,9 +71,18 @@ export default async function PreviewPage({ params }: PreviewPageProps) {
     storeName: job?.normalizedDomain,
   });
 
+  // Build widget config and inject widget into the rewritten HTML
+  const widgetConfig = await buildWidgetConfig(jobId, previewPath);
+  const finalHtml = widgetConfig
+    ? injectWidget(rewrittenHtml, {
+        config: widgetConfig,
+        apiBaseUrl: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
+      })
+    : rewrittenHtml;
+
   return (
     <div
-      dangerouslySetInnerHTML={{ __html: rewrittenHtml }}
+      dangerouslySetInnerHTML={{ __html: finalHtml }}
       suppressHydrationWarning
     />
   );

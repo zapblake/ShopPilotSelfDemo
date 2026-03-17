@@ -28,6 +28,13 @@ interface RenderedPageData {
   renderDurationMs: number | null;
 }
 
+interface WidgetConfigData {
+  storeName: string | null;
+  primaryColor: string | null;
+  promptContext: string | null;
+  mode: string;
+}
+
 interface JobData {
   id: string;
   submittedUrl: string;
@@ -48,6 +55,9 @@ interface JobData {
   discoveredPages: DiscoveredPage[];
   selectedPages: { id: string; url: string; pageType: string | null; title: string | null }[];
   renderedPages: RenderedPageData[];
+  widgetConfig: WidgetConfigData | null;
+  eventCount: number;
+  lastEvent: { eventName: string; createdAt: string } | null;
 }
 
 const STEPS = ["QUEUED", "CRAWLING", "CLASSIFYING", "READY_FOR_RENDER", "RENDERING", "RENDER_COMPLETE", "PREVIEW_READY"] as const;
@@ -224,6 +234,64 @@ export function JobStatusView({ jobId }: { jobId: string }) {
                 ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Widget config & events */}
+      {(job.widgetConfig || job.eventCount > 0) && (
+        <div className="rounded-lg border bg-white p-4">
+          <h2 className="font-semibold">Widget</h2>
+          <div className="mt-3 space-y-3">
+            {job.widgetConfig && (
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-500">Store Name:</span>{" "}
+                  {job.widgetConfig.storeName ?? "—"}
+                </div>
+                <div>
+                  <span className="text-gray-500">Mode:</span>{" "}
+                  {job.widgetConfig.mode}
+                </div>
+                {job.widgetConfig.promptContext && (
+                  <div className="col-span-2">
+                    <span className="text-gray-500">Prompt Context:</span>
+                    <p className="mt-1 rounded bg-gray-50 p-2 text-xs text-gray-600">
+                      {job.widgetConfig.promptContext.length > 200
+                        ? job.widgetConfig.promptContext.slice(0, 200) + "..."
+                        : job.widgetConfig.promptContext}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+            <div className="flex items-center gap-4 text-sm">
+              <div>
+                <span className="text-gray-500">Events:</span>{" "}
+                <span className="font-medium">{job.eventCount}</span>
+              </div>
+              {job.lastEvent && (
+                <div>
+                  <span className="text-gray-500">Last:</span>{" "}
+                  <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs">
+                    {job.lastEvent.eventName}
+                  </span>{" "}
+                  <span className="text-xs text-gray-400">
+                    {new Date(job.lastEvent.createdAt).toLocaleString()}
+                  </span>
+                </div>
+              )}
+            </div>
+            <div className="text-xs">
+              <a
+                href={`/api/preview/${job.id}/config`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:underline"
+              >
+                View widget config JSON
+              </a>
+            </div>
+          </div>
         </div>
       )}
 

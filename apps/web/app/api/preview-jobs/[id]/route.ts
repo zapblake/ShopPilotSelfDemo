@@ -15,6 +15,13 @@ export async function GET(
         include: { discoveredPages: true },
       },
       renderedPages: true,
+      widgetConfig: true,
+      events: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        select: { id: true, eventName: true, createdAt: true },
+      },
+      _count: { select: { events: true } },
     },
   });
 
@@ -79,5 +86,20 @@ export async function GET(
       renderFinishedAt: rp.renderFinishedAt?.toISOString() ?? null,
       renderDurationMs: rp.renderDurationMs,
     })),
+    widgetConfig: job.widgetConfig
+      ? {
+          storeName: job.widgetConfig.storeName,
+          primaryColor: job.widgetConfig.primaryColor,
+          promptContext: job.widgetConfig.promptContext,
+          mode: job.widgetConfig.mode,
+        }
+      : null,
+    eventCount: job._count.events,
+    lastEvent: job.events[0]
+      ? {
+          eventName: job.events[0].eventName,
+          createdAt: job.events[0].createdAt.toISOString(),
+        }
+      : null,
   });
 }
