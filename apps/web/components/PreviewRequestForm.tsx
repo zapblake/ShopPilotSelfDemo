@@ -5,21 +5,24 @@ import { useState } from "react";
 export function PreviewRequestForm() {
   const [url, setUrl] = useState("");
   const [email, setEmail] = useState("");
+  const [storeName, setStoreName] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState<{ id: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
-    setResult(null);
 
     try {
       const res = await fetch("/api/preview-jobs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url, email: email || undefined }),
+        body: JSON.stringify({
+          url,
+          email: email || undefined,
+          storeName: storeName || undefined,
+        }),
       });
 
       const data = await res.json();
@@ -29,7 +32,7 @@ export function PreviewRequestForm() {
         return;
       }
 
-      setResult({ id: data.data.id });
+      window.location.href = `/preview-jobs/${data.data.jobId}`;
     } catch {
       setError("Failed to submit request. Please try again.");
     } finally {
@@ -41,7 +44,7 @@ export function PreviewRequestForm() {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <input
-          type="url"
+          type="text"
           required
           placeholder="https://your-store.myshopify.com"
           value={url}
@@ -58,29 +61,24 @@ export function PreviewRequestForm() {
           className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
         />
       </div>
+      <div>
+        <input
+          type="text"
+          placeholder="Store name (optional)"
+          value={storeName}
+          onChange={(e) => setStoreName(e.target.value)}
+          className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+        />
+      </div>
       <button
         type="submit"
         disabled={submitting}
         className="w-full rounded-lg bg-blue-600 px-4 py-3 text-base font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
       >
-        {submitting ? "Submitting..." : "Generate Preview"}
+        {submitting ? "Analyzing your store..." : "Generate Preview"}
       </button>
 
-      {error && (
-        <p className="text-sm text-red-600">{error}</p>
-      )}
-
-      {result && (
-        <div className="rounded-lg bg-green-50 p-4 text-sm text-green-800">
-          Preview job created!{" "}
-          <a
-            href={`/status/${result.id}`}
-            className="font-medium underline"
-          >
-            Track status
-          </a>
-        </div>
-      )}
+      {error && <p className="text-sm text-red-600">{error}</p>}
     </form>
   );
 }

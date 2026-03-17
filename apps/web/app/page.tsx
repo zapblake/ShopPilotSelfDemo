@@ -6,10 +6,11 @@ export default function HomePage() {
       <div className="w-full max-w-lg space-y-8 text-center">
         <div>
           <h1 className="text-4xl font-bold tracking-tight">
-            ZapSight
+            See Your Store With ZapSight&apos;s AI
           </h1>
           <p className="mt-3 text-lg text-gray-600">
-            Enter your store URL to see a preview of ZapSight on your site.
+            Enter your store URL to get a free preview of Shop Pilot on your
+            site
           </p>
         </div>
         <PreviewRequestForm />

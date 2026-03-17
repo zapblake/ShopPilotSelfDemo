@@ -1,0 +1,43 @@
+import { NextRequest } from "next/server";
+import { successResponse, errorResponse } from "@/lib/api-response";
+import { prisma } from "@/lib/prisma";
+
+export async function GET(request: NextRequest) {
+  const secret = request.nextUrl.searchParams.get("secret");
+
+  if (!process.env.ADMIN_SECRET || secret !== process.env.ADMIN_SECRET) {
+    return errorResponse("UNAUTHORIZED", "Invalid or missing secret", 401);
+  }
+
+  const jobs = await prisma.previewJob.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 20,
+    include: {
+      crawlRuns: {
+        select: {
+          status: true,
+          startedAt: true,
+          finishedAt: true,
+          _count: { select: { discoveredPages: true } },
+        },
+      },
+    },
+  });
+
+  return successResponse(
+    jobs.map((job) => ({
+      id: job.id,
+      submittedUrl: job.submittedUrl,
+      normalizedDomain: job.normalizedDomain,
+      status: job.status,
+      email: job.email,
+      createdAt: job.createdAt.toISOString(),
+      crawlRun: job.crawlRuns[0]
+        ? {
+            status: job.crawlRuns[0].status,
+            pageCount: job.crawlRuns[0]._count.discoveredPages,
+          }
+        : null,
+    }))
+  );
+}

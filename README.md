@@ -30,6 +30,9 @@ pnpm db:seed
 
 # 6. Start the dev server
 cd ../.. && pnpm dev
+
+# 7. In a separate terminal, start the worker
+cd packages/queue && npx ts-node src/run-worker.ts
 ```
 
 ## Folder Structure
@@ -42,6 +45,7 @@ cd ../.. && pnpm dev
 │   ├── lib/                # Shared utilities (logger, errors, API helpers)
 │   └── middleware.ts       # Host detection (main vs preview subdomain)
 ├── packages/
+│   ├── crawl/              # Crawl providers, page classifier, page selector
 │   ├── db/                 # Prisma schema, client, repositories
 │   ├── queue/              # BullMQ queue & worker definitions
 │   └── storage/            # Storage adapter interface (local / S3)
@@ -60,12 +64,38 @@ cd ../.. && pnpm dev
 - Storage adapter interface with local filesystem implementation
 - Landing page with preview request form
 
-## Phase 1 TODOs
+## Phase 1: Crawl Pipeline & Job Orchestration
 
-- Real crawl logic (Firecrawl / Puppeteer integration)
-- Cloudflare Workers for edge subdomain routing
-- Widget injection into rendered pages
-- Full authentication & admin dashboard
-- S3 storage adapter implementation
-- Real-time job status via SSE or WebSocket
-- Email notifications on job completion
+### What's new
+
+- **Crawl package** (`packages/crawl`): mock crawl provider, rule-based page classifier, representative page selector
+- **Real job pipeline**: URL submit → DB create (QUEUED) → BullMQ enqueue → worker picks up → CRAWLING → CLASSIFYING → READY_FOR_RENDER
+- **Live API routes**: POST `/api/preview-jobs` (create + enqueue), GET `/api/preview-jobs/[id]` (real DB data), GET `/api/admin/preview-jobs?secret=` (admin list)
+- **Frontend status page** (`/preview-jobs/[id]`): auto-polling progress bar, discovered pages table, selected pages summary
+- **Admin dashboard** (`/admin/preview-jobs?secret=`): last 20 jobs with status and crawl summary
+- **Prisma schema updates**: QUEUED/CLASSIFYING/READY_FOR_RENDER statuses, PageType enum, classification fields on DiscoveredPage
+
+### Running the full local stack
+
+```bash
+# Terminal 1: infrastructure
+docker compose up -d
+
+# Terminal 2: database setup (first time)
+cd packages/db && pnpm prisma migrate dev --name phase1
+
+# Terminal 3: web app
+pnpm dev
+
+# Terminal 4: worker
+cd packages/queue && npx ts-node src/run-worker.ts
+```
+
+### Phase 1 API routes
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/preview-jobs` | Submit a store URL, creates job and enqueues |
+| GET | `/api/preview-jobs/[id]` | Get job status with crawl data and pages |
+| GET | `/api/admin/preview-jobs?secret=` | Admin: list last 20 jobs |
+| GET | `/api/health` | Health check |

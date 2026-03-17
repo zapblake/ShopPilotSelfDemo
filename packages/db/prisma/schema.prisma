@@ -45,7 +45,10 @@ model DiscoveredPage {
   normalizedUrl     String
   title             String?
   statusCode        Int?
+  pageType          PageType?
   pageTypeCandidate String?
+  score             Float?
+  reasoning         String?
   selected          Boolean  @default(false)
   scoresJson        Json?
   crawlRun          CrawlRun @relation(fields: [crawlRunId], references: [id])
@@ -94,11 +97,23 @@ model PreviewEvent {
 
 enum JobStatus {
   PENDING
+  QUEUED
   CRAWLING
-  RENDERING
+  CLASSIFYING
+  READY_FOR_RENDER
   READY
   FAILED
   EXPIRED
+}
+
+enum PageType {
+  HOMEPAGE
+  PRODUCT
+  COLLECTION
+  INFO
+  CART
+  ACCOUNT
+  OTHER
 }
 
 enum CrawlStatus {

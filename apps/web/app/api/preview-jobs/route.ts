@@ -1,45 +1,77 @@
 import { NextRequest } from "next/server";
-import { createId } from "@paralleldrive/cuid2";
+import { Queue } from "bullmq";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
+import { prisma } from "@/lib/prisma";
+import { normalizeUrl } from "@/lib/url-utils";
+
+let queue: Queue | null = null;
+
+function getQueue() {
+  if (!queue) {
+    const redisUrl = process.env.REDIS_URL ?? "redis://localhost:6379";
+    const parsed = new URL(redisUrl);
+    queue = new Queue("preview-jobs", {
+      connection: {
+        host: parsed.hostname,
+        port: Number(parsed.port) || 6379,
+        password: parsed.password || undefined,
+        maxRetriesPerRequest: null,
+      },
+    });
+  }
+  return queue;
+}
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { url, email } = body as { url?: string; email?: string };
+    const { url, email, storeName } = body as {
+      url?: string;
+      email?: string;
+      storeName?: string;
+    };
 
     if (!url || typeof url !== "string") {
       return errorResponse("VALIDATION_ERROR", "url is required", 400);
     }
 
-    let parsedUrl: URL;
-    try {
-      parsedUrl = new URL(url);
-    } catch {
+    const normalized = normalizeUrl(url);
+    if (!normalized) {
       return errorResponse("VALIDATION_ERROR", "Invalid URL format", 400);
     }
 
-    if (email && typeof email !== "string") {
-      return errorResponse("VALIDATION_ERROR", "email must be a string", 400);
+    const job = await prisma.previewJob.create({
+      data: {
+        submittedUrl: url,
+        normalizedDomain: normalized.domain,
+        status: "QUEUED",
+        email: email || null,
+      },
+    });
+
+    await getQueue().add("preview", {
+      previewJobId: job.id,
+      submittedUrl: normalized.url,
+      normalizedDomain: normalized.domain,
+    });
+
+    if (storeName) {
+      await prisma.widgetPreviewConfig.create({
+        data: { previewJobId: job.id, storeName },
+      });
     }
 
-    const jobId = createId();
-    const normalizedDomain = parsedUrl.hostname;
-
-    logger.info({ jobId, url, normalizedDomain }, "Preview job created");
+    logger.info(
+      { jobId: job.id, url, domain: normalized.domain },
+      "Preview job created and enqueued"
+    );
 
     return successResponse(
       {
-        id: jobId,
-        submittedUrl: url,
-        normalizedDomain,
-        status: "PENDING",
-        email: email ?? null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        completedAt: null,
-        errorCode: null,
-        errorMessage: null,
+        jobId: job.id,
+        status: "QUEUED",
+        statusUrl: `/preview-jobs/${job.id}`,
       },
       201
     );
