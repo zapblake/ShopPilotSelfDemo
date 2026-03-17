@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { Queue } from "bullmq";
+import nodemailer from "nodemailer";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
@@ -66,6 +67,42 @@ export async function POST(request: NextRequest) {
       { jobId: job.id, url, domain: normalized.domain },
       "Preview job created and enqueued"
     );
+
+    // Fire-and-forget email notification
+    try {
+      const smtpUser = process.env.SMTP_USER;
+      const smtpPass = process.env.SMTP_PASS;
+      if (smtpUser && smtpPass) {
+        const transporter = nodemailer.createTransport({
+          host: process.env.SMTP_HOST || "smtp.gmail.com",
+          port: Number(process.env.SMTP_PORT) || 587,
+          secure: false,
+          auth: { user: smtpUser, pass: smtpPass },
+        });
+        transporter
+          .sendMail({
+            from: smtpUser,
+            to: process.env.NOTIFICATION_EMAIL_TO || "blake@zapsight.com",
+            subject: `🚀 New ZapSight Preview Request — ${normalized.domain}`,
+            text: [
+              "New preview request submitted.",
+              "",
+              `Domain: ${normalized.domain}`,
+              `URL: ${url}`,
+              `Email: ${email || "not provided"}`,
+              `Job ID: ${job.id}`,
+              `Status Page: https://zapsight.us/preview-jobs/${job.id}`,
+              "",
+              `Submitted at: ${new Date().toISOString()}`,
+            ].join("\n"),
+          })
+          .catch((err: unknown) => {
+            logger.warn({ error: err }, "Failed to send notification email");
+          });
+      }
+    } catch (emailErr) {
+      logger.warn({ error: emailErr }, "Failed to send notification email");
+    }
 
     return successResponse(
       {

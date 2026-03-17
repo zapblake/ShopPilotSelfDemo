@@ -267,6 +267,8 @@ export function injectWidget(html: string, options: InjectionOptions): string {
   var productType = (config.storeContext && config.storeContext.productType) ? config.storeContext.productType : 'product';
   var domain = config.normalizedDomain || '';
   var state = 'greeting'; // 'greeting' or 'conversation'
+  var messageCount = 0;
+  var ctaShown = false;
 
   // --- Tab ---
   var tab = document.createElement('button');
@@ -333,6 +335,8 @@ export function injectWidget(html: string, options: InjectionOptions): string {
     document.getElementById('zs-greeting').style.display = 'flex';
     document.getElementById('zs-suggestions').style.display = 'block';
     state = 'greeting';
+    messageCount = 0;
+    ctaShown = false;
   });
 
   // --- Chips ---
@@ -363,9 +367,14 @@ export function injectWidget(html: string, options: InjectionOptions): string {
 
     appendMessage(text, 'user');
     logEvent('message_sent', { text: text });
+    messageCount++;
     setTimeout(function() {
       var response = getDemoResponse(text, config);
       appendMessage(response, 'bot');
+      if (messageCount === 2 && !ctaShown) {
+        ctaShown = true;
+        appendCTA();
+      }
     }, 600);
   }
 
@@ -373,6 +382,19 @@ export function injectWidget(html: string, options: InjectionOptions): string {
   document.getElementById('zs-input').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') sendMessage();
   });
+
+  function appendCTA() {
+    var msgs = document.getElementById('zs-messages');
+    var el = document.createElement('div');
+    el.style.cssText = 'background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border-radius: 14px; padding: 14px 16px; margin-top: 4px; color: white; font-size: 13px; line-height: 1.5;';
+    el.innerHTML = '<div style="font-weight:700;margin-bottom:6px;">\\u2728 Want this on your actual store?</div><div style="opacity:0.85;margin-bottom:12px;">See Shop Pilot live on your real inventory in a 15-minute call.</div><a href="https://calendly.com/blake-zapsight/30min" target="_blank" id="zs-cta-link" style="display:block;background:white;color:#4f46e5;text-align:center;padding:8px 0;border-radius:8px;font-weight:700;font-size:13px;text-decoration:none;">Book a 15-Min Call \\u2192</a>';
+    msgs.appendChild(el);
+    document.getElementById('zs-cta-link').addEventListener('click', function() {
+      logEvent('cta_clicked', { destination: 'calendly' });
+    });
+    msgs.scrollTop = msgs.scrollHeight;
+    logEvent('cta_shown', { trigger: 'after_2_messages' });
+  }
 
   function appendMessage(text, type) {
     var msgs = document.getElementById('zs-messages');

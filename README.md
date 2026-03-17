@@ -241,6 +241,10 @@ The widget fires events via `POST /api/preview-events`:
 
 Events are stored in the `PreviewEvent` table with optional session ID support.
 
+## Lead Notifications
+
+Configure SMTP env vars to receive an email when someone submits a preview request. Copy the `SMTP_*` variables from `.env.example` into your `.env` and set `SMTP_PASS` to a Gmail app password. If SMTP is not configured, notifications are silently skipped.
+
 ### Phase 5 TODOs
 
 - Real LLM-powered chat responses via Claude API
