@@ -23,6 +23,7 @@ const STATUS_COLORS: Record<string, string> = {
   READY_FOR_RENDER: "text-green-600",
   RENDERING: "text-purple-600",
   RENDER_COMPLETE: "text-green-600",
+  PREVIEW_READY: "text-emerald-600",
   READY: "text-green-600",
   FAILED: "text-red-600",
   EXPIRED: "text-gray-400",
@@ -87,6 +88,7 @@ export default function AdminPreviewJobsPage() {
                 <th className="px-4 py-3">Created</th>
                 <th className="px-4 py-3">Pages</th>
                 <th className="px-4 py-3">Rendered</th>
+                <th className="px-4 py-3">Preview</th>
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
@@ -118,6 +120,20 @@ export default function AdminPreviewJobsPage() {
                     )}
                   </td>
                   <td className="px-4 py-3">
+                    {(job.status === "PREVIEW_READY" || job.status === "READY") ? (
+                      <a
+                        href={`/p/${job.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-emerald-600 hover:underline text-xs"
+                      >
+                        Open
+                      </a>
+                    ) : (
+                      <span className="text-gray-300">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
                     <a
                       href={`/preview-jobs/${job.id}`}
                       className="text-blue-600 hover:underline"
@@ -129,7 +145,7 @@ export default function AdminPreviewJobsPage() {
               ))}
               {jobs.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-gray-400">
+                  <td colSpan={8} className="px-4 py-8 text-center text-gray-400">
                     No jobs found
                   </td>
                 </tr>

@@ -1,0 +1,15 @@
+{
+  "name": "@zapsight/preview",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/index.ts",
+  "dependencies": {
+    "@prisma/client": "^6.1.0",
+    "@zapsight/storage": "workspace:*",
+    "pino": "^9.6.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "@types/node": "^22.10.5"
+  }
+}

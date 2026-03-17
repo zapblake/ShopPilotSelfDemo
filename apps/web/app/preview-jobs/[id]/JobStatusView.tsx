@@ -50,7 +50,7 @@ interface JobData {
   renderedPages: RenderedPageData[];
 }
 
-const STEPS = ["QUEUED", "CRAWLING", "CLASSIFYING", "READY_FOR_RENDER", "RENDERING", "RENDER_COMPLETE"] as const;
+const STEPS = ["QUEUED", "CRAWLING", "CLASSIFYING", "READY_FOR_RENDER", "RENDERING", "RENDER_COMPLETE", "PREVIEW_READY"] as const;
 
 const STATUS_COLORS: Record<string, string> = {
   PENDING: "bg-gray-200 text-gray-700",
@@ -60,12 +60,13 @@ const STATUS_COLORS: Record<string, string> = {
   READY_FOR_RENDER: "bg-green-100 text-green-700",
   RENDERING: "bg-purple-100 text-purple-700",
   RENDER_COMPLETE: "bg-green-100 text-green-700",
+  PREVIEW_READY: "bg-emerald-100 text-emerald-700",
   READY: "bg-green-100 text-green-700",
   FAILED: "bg-red-100 text-red-700",
   EXPIRED: "bg-gray-200 text-gray-500",
 };
 
-const TERMINAL_STATUSES = new Set(["RENDER_COMPLETE", "READY", "FAILED", "EXPIRED"]);
+const TERMINAL_STATUSES = new Set(["RENDER_COMPLETE", "PREVIEW_READY", "READY", "FAILED", "EXPIRED"]);
 
 export function JobStatusView({ jobId }: { jobId: string }) {
   const [job, setJob] = useState<JobData | null>(null);
@@ -183,6 +184,46 @@ export function JobStatusView({ jobId }: { jobId: string }) {
               <span className="ml-2 text-red-400">({job.errorCode})</span>
             )}
           </p>
+        </div>
+      )}
+
+      {/* Preview section */}
+      {(job.status === "PREVIEW_READY" || job.status === "READY") && (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+          <h2 className="font-semibold text-emerald-800">Preview Available</h2>
+          <div className="mt-2">
+            <a
+              href={`/p/${job.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+            >
+              Open Preview
+              <span className="text-xs">&rarr;</span>
+            </a>
+          </div>
+          {job.renderedPages && job.renderedPages.length > 0 && (
+            <div className="mt-3 space-y-1">
+              <p className="text-xs font-medium text-emerald-700">Preview Pages:</p>
+              {job.renderedPages
+                .filter((rp) => rp.renderStatus === "DONE")
+                .map((rp) => (
+                  <div key={rp.id} className="flex items-center gap-2 text-sm">
+                    <code className="rounded bg-emerald-100 px-1.5 py-0.5 text-xs text-emerald-800">
+                      {rp.previewPath || "/"}
+                    </code>
+                    <a
+                      href={`/p/${job.id}${rp.previewPath === "/" ? "" : rp.previewPath}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-emerald-600 hover:underline text-xs"
+                    >
+                      Open
+                    </a>
+                  </div>
+                ))}
+            </div>
+          )}
         </div>
       )}
 

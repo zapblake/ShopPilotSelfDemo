@@ -47,6 +47,7 @@ cd packages/queue && npx ts-node src/run-worker.ts
 ├── packages/
 │   ├── crawl/              # Crawl providers, page classifier, page selector
 │   ├── db/                 # Prisma schema, client, repositories
+│   ├── preview/            # HTML rewriter, preview resolver, page service
 │   ├── queue/              # BullMQ queue & worker definitions
 │   ├── renderer/           # Render providers (mock / Playwright), page capture
 │   └── storage/            # Storage adapter interface (local / S3)
@@ -148,9 +149,57 @@ cd packages/queue && npx ts-node src/run-render-worker.ts
 
 Full flow: submit URL → QUEUED → CRAWLING → CLASSIFYING → READY_FOR_RENDER → RENDERING → RENDER_COMPLETE
 
-### Phase 3 TODOs
+## Phase 3: Preview Serving & HTML Rewriting
 
-- HTML rewriting (inject ZapSight widget, rewrite asset URLs)
+### What's new
+
+- **Preview package** (`packages/preview`): HTML rewriter, preview resolver, page service
+- **HTML rewriting**: internal links rewritten to stay inside preview, external links open in new tab, checkout/payment scripts neutralized, forms disabled, preview banner injected
+- **Preview serving**: dev mode at `/p/[jobId]`, subdomain mode via `preview-{jobId}.zapsight.us`
+- **Middleware update**: preview subdomain requests rewritten to `/p/[jobId]/[path]` internally
+- **Preview API**: `GET /api/preview/[jobId]` returns preview URL and page list
+- **Updated status page**: preview link and per-page open links when PREVIEW_READY
+- **Updated admin dashboard**: preview column with quick open link
+- **New job status**: `PREVIEW_READY` — render worker now sets preview paths, creates PreviewHost, and transitions to PREVIEW_READY
+- **Prisma schema updates**: `PREVIEW_READY` enum value, `PreviewHost.jobStatus` and `PreviewHost.previewBaseUrl` fields
+
+### Accessing previews in dev mode
+
+After a job reaches `PREVIEW_READY` status, visit:
+
+```
+http://localhost:3000/p/{jobId}
+```
+
+Inner pages are available at their original paths:
+
+```
+http://localhost:3000/p/{jobId}/products/king-mattress
+```
+
+### How wildcard DNS works in production
+
+In production, `*.zapsight.us` DNS points to our Vercel deployment. The middleware detects `preview-{jobId}.zapsight.us` and internally rewrites to `/p/{jobId}/...`. This means:
+
+- `preview-abc123.zapsight.us` → serves the homepage for job `abc123`
+- `preview-abc123.zapsight.us/products/foo` → serves the `/products/foo` page
+
+### New environment variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PREVIEW_MODE` | `dev` | Preview mode: `dev` (path-based) or `subdomain` |
+| `PREVIEW_BASE_URL` | `http://localhost:3000` | Base URL for preview links |
+
+### Full flow
+
+1. Submit URL → job created (QUEUED)
+2. Crawl + classify → READY_FOR_RENDER
+3. Render pages → RENDERING → PREVIEW_READY
+4. Click preview link on status page → see the store with ZapSight banner
+
+### Phase 4 TODOs
+
 - Widget injection and configuration
-- Preview host serving (wildcard subdomain → rendered pages)
 - Cloudflare integration for edge serving
+- Preview expiration and cleanup

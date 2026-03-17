@@ -107,16 +107,56 @@ export function createRenderWorker() {
           }
         }
 
-        // 4. Update job status to RENDER_COMPLETE
+        // 4. Set previewPath on each rendered page based on sourceUrl
+        const donePages = await prisma.renderedPage.findMany({
+          where: { previewJobId, renderStatus: "DONE" },
+        });
+
+        for (const page of donePages) {
+          try {
+            const url = new URL(page.sourceUrl);
+            const previewPath = url.pathname === "" ? "/" : url.pathname;
+            await prisma.renderedPage.update({
+              where: { id: page.id },
+              data: { previewPath },
+            });
+          } catch {
+            // If URL parsing fails, default to "/"
+            await prisma.renderedPage.update({
+              where: { id: page.id },
+              data: { previewPath: "/" },
+            });
+          }
+        }
+
+        // 5. Create or update PreviewHost record
+        const hostname = `preview-${previewJobId}.zapsight.us`;
+        await prisma.previewHost.upsert({
+          where: { hostname },
+          create: {
+            previewJobId,
+            hostname,
+            active: true,
+            jobStatus: "PREVIEW_READY",
+            previewBaseUrl: `https://${hostname}`,
+          },
+          update: {
+            active: true,
+            jobStatus: "PREVIEW_READY",
+            previewBaseUrl: `https://${hostname}`,
+          },
+        });
+
+        // 6. Update job status to PREVIEW_READY
         await prisma.previewJob.update({
           where: { id: previewJobId },
           data: {
-            status: "RENDER_COMPLETE",
+            status: "PREVIEW_READY",
             completedAt: new Date(),
           },
         });
 
-        logger.info({ previewJobId }, "Render job completed");
+        logger.info({ previewJobId }, "Render job completed, preview ready");
       } catch (err) {
         logger.error({ previewJobId, error: err }, "Render job failed fatally");
 

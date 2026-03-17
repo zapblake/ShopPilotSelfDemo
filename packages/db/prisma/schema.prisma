@@ -71,11 +71,13 @@ model RenderedPage {
 }
 
 model PreviewHost {
-  id           String     @id @default(cuid())
-  previewJobId String
-  hostname     String     @unique
-  active       Boolean    @default(true)
-  previewJob   PreviewJob @relation(fields: [previewJobId], references: [id])
+  id             String     @id @default(cuid())
+  previewJobId   String
+  hostname       String     @unique
+  active         Boolean    @default(true)
+  jobStatus      String?
+  previewBaseUrl String?
+  previewJob     PreviewJob @relation(fields: [previewJobId], references: [id])
 }
 
 model WidgetPreviewConfig {
@@ -107,6 +109,7 @@ enum JobStatus {
   READY_FOR_RENDER
   RENDERING
   RENDER_COMPLETE
+  PREVIEW_READY
   READY
   FAILED
   EXPIRED
