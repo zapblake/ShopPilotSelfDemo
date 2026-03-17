@@ -14,6 +14,20 @@ interface DiscoveredPage {
   selected: boolean;
 }
 
+interface RenderedPageData {
+  id: string;
+  sourceUrl: string;
+  previewPath: string;
+  renderStatus: string;
+  htmlBlobKey: string | null;
+  screenshotBlobKey: string | null;
+  extractedJson: { title?: string; metaDescription?: string } | null;
+  errorMessage: string | null;
+  renderStartedAt: string | null;
+  renderFinishedAt: string | null;
+  renderDurationMs: number | null;
+}
+
 interface JobData {
   id: string;
   submittedUrl: string;
@@ -33,9 +47,10 @@ interface JobData {
   } | null;
   discoveredPages: DiscoveredPage[];
   selectedPages: { id: string; url: string; pageType: string | null; title: string | null }[];
+  renderedPages: RenderedPageData[];
 }
 
-const STEPS = ["QUEUED", "CRAWLING", "CLASSIFYING", "READY_FOR_RENDER"] as const;
+const STEPS = ["QUEUED", "CRAWLING", "CLASSIFYING", "READY_FOR_RENDER", "RENDERING", "RENDER_COMPLETE"] as const;
 
 const STATUS_COLORS: Record<string, string> = {
   PENDING: "bg-gray-200 text-gray-700",
@@ -43,12 +58,14 @@ const STATUS_COLORS: Record<string, string> = {
   CRAWLING: "bg-blue-100 text-blue-700",
   CLASSIFYING: "bg-yellow-100 text-yellow-700",
   READY_FOR_RENDER: "bg-green-100 text-green-700",
+  RENDERING: "bg-purple-100 text-purple-700",
+  RENDER_COMPLETE: "bg-green-100 text-green-700",
   READY: "bg-green-100 text-green-700",
   FAILED: "bg-red-100 text-red-700",
   EXPIRED: "bg-gray-200 text-gray-500",
 };
 
-const TERMINAL_STATUSES = new Set(["READY_FOR_RENDER", "READY", "FAILED", "EXPIRED"]);
+const TERMINAL_STATUSES = new Set(["RENDER_COMPLETE", "READY", "FAILED", "EXPIRED"]);
 
 export function JobStatusView({ jobId }: { jobId: string }) {
   const [job, setJob] = useState<JobData | null>(null);
@@ -201,6 +218,60 @@ export function JobStatusView({ jobId }: { jobId: string }) {
                   {p.pageType}
                 </span>
                 <span className="text-gray-700">{p.title ?? p.url}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Rendered pages */}
+      {job.renderedPages && job.renderedPages.length > 0 && (
+        <div className="rounded-lg border bg-white p-4">
+          <h2 className="font-semibold">Rendered Pages</h2>
+          <div className="mt-3 space-y-3">
+            {job.renderedPages.map((rp) => (
+              <div key={rp.id} className="rounded border p-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
+                        rp.renderStatus === "DONE"
+                          ? "bg-green-100 text-green-700"
+                          : rp.renderStatus === "RENDERING"
+                          ? "bg-purple-100 text-purple-700"
+                          : rp.renderStatus === "FAILED"
+                          ? "bg-red-100 text-red-700"
+                          : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {rp.renderStatus}
+                    </span>
+                    <span className="text-sm text-gray-700 truncate max-w-md" title={rp.sourceUrl}>
+                      {rp.sourceUrl}
+                    </span>
+                  </div>
+                  {rp.renderDurationMs != null && (
+                    <span className="text-xs text-gray-400">{rp.renderDurationMs}ms</span>
+                  )}
+                </div>
+                {rp.extractedJson && (
+                  <div className="mt-1 text-sm text-gray-500">
+                    {rp.extractedJson.title && (
+                      <span className="font-medium text-gray-700">{rp.extractedJson.title}</span>
+                    )}
+                    {rp.extractedJson.metaDescription && (
+                      <span className="ml-2 text-gray-400">— {rp.extractedJson.metaDescription}</span>
+                    )}
+                  </div>
+                )}
+                {rp.screenshotBlobKey && (
+                  <div className="mt-2 flex h-8 w-32 items-center justify-center rounded bg-gray-100 text-xs text-gray-500">
+                    Screenshot captured
+                  </div>
+                )}
+                {rp.renderStatus === "FAILED" && rp.errorMessage && (
+                  <p className="mt-1 text-xs text-red-500">{rp.errorMessage}</p>
+                )}
               </div>
             ))}
           </div>

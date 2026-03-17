@@ -21,6 +21,9 @@ export async function GET(request: NextRequest) {
           _count: { select: { discoveredPages: true } },
         },
       },
+      renderedPages: {
+        select: { renderStatus: true },
+      },
     },
   });
 
@@ -38,6 +41,10 @@ export async function GET(request: NextRequest) {
             pageCount: job.crawlRuns[0]._count.discoveredPages,
           }
         : null,
+      renderedPageCount: job.renderedPages.length,
+      renderStatusSummary: job.renderedPages.length > 0
+        ? [...new Set(job.renderedPages.map((rp) => rp.renderStatus))].join(", ")
+        : "",
     }))
   );
 }

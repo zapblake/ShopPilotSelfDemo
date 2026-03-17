@@ -14,6 +14,7 @@ export async function GET(
       crawlRuns: {
         include: { discoveredPages: true },
       },
+      renderedPages: true,
     },
   });
 
@@ -65,5 +66,18 @@ export async function GET(
             title: p.title,
           }))
       : [],
+    renderedPages: job.renderedPages.map((rp) => ({
+      id: rp.id,
+      sourceUrl: rp.sourceUrl,
+      previewPath: rp.previewPath,
+      renderStatus: rp.renderStatus,
+      htmlBlobKey: rp.htmlBlobKey,
+      screenshotBlobKey: rp.screenshotBlobKey,
+      extractedJson: rp.extractedJson as Record<string, unknown> | null,
+      errorMessage: rp.errorMessage,
+      renderStartedAt: rp.renderStartedAt?.toISOString() ?? null,
+      renderFinishedAt: rp.renderFinishedAt?.toISOString() ?? null,
+      renderDurationMs: rp.renderDurationMs,
+    })),
   });
 }

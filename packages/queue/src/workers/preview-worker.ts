@@ -8,6 +8,7 @@ import {
   selectRepresentativePages,
 } from "@zapsight/crawl";
 import type { PreviewJobData } from "../queues/preview-queue";
+import { renderQueue } from "../queues/render-queue";
 
 const logger = pino({ name: "preview-worker" });
 const prisma = new PrismaClient();
@@ -111,11 +112,31 @@ export function createPreviewWorker() {
           where: { id: previewJobId },
           data: {
             status: "READY_FOR_RENDER",
-            completedAt: new Date(),
           },
         });
 
-        logger.info({ previewJobId }, "Preview job completed");
+        // 11. Create RenderedPage stubs for selected pages
+        const selectedPages = classified.filter((cp) =>
+          Object.values(selected).some(
+            (s) => s?.normalizedUrl === cp.normalizedUrl
+          )
+        );
+
+        for (const page of selectedPages) {
+          await prisma.renderedPage.create({
+            data: {
+              previewJobId,
+              sourceUrl: page.url,
+              previewPath: page.normalizedUrl,
+              renderStatus: "PENDING",
+            },
+          });
+        }
+
+        // 12. Enqueue render job
+        await renderQueue.add("render-preview", { previewJobId });
+
+        logger.info({ previewJobId, renderPageCount: selectedPages.length }, "Preview job completed, render enqueued");
       } catch (err) {
         logger.error({ previewJobId, error: err }, "Preview job failed");
 

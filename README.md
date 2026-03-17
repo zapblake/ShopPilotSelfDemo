@@ -48,6 +48,7 @@ cd packages/queue && npx ts-node src/run-worker.ts
 │   ├── crawl/              # Crawl providers, page classifier, page selector
 │   ├── db/                 # Prisma schema, client, repositories
 │   ├── queue/              # BullMQ queue & worker definitions
+│   ├── renderer/           # Render providers (mock / Playwright), page capture
 │   └── storage/            # Storage adapter interface (local / S3)
 ├── docker-compose.yml      # Local Postgres 15 + Redis 7
 ├── turbo.json              # Turborepo pipeline config
@@ -99,3 +100,57 @@ cd packages/queue && npx ts-node src/run-worker.ts
 | GET | `/api/preview-jobs/[id]` | Get job status with crawl data and pages |
 | GET | `/api/admin/preview-jobs?secret=` | Admin: list last 20 jobs |
 | GET | `/api/health` | Health check |
+
+## Phase 2: Render & Capture Pipeline
+
+### What's new
+
+- **Renderer package** (`packages/renderer`): swappable render providers (mock for dev, Playwright for real captures)
+- **Render worker** (`packages/queue/src/workers/render-worker.ts`): picks up render jobs, captures HTML + screenshots, stores artifacts, persists RenderedPage records
+- **Automatic pipeline handoff**: preview worker now creates RenderedPage stubs and enqueues render jobs after crawl/classify completes
+- **Storage integration**: rendered HTML and screenshots stored via the storage adapter (`jobs/{jobId}/pages/{pageId}/`)
+- **Updated status page**: rendered pages section with status, extracted metadata, screenshot indicator, timing info
+- **Updated admin dashboard**: rendered page counts and status summary per job
+- **New job statuses**: RENDERING, RENDER_COMPLETE added to pipeline flow
+- **Prisma schema updates**: RenderedPage gains `errorMessage`, `renderStartedAt`, `renderFinishedAt`, `renderDurationMs` fields
+
+### New environment variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `RENDERER_PROVIDER` | `mock` | Render provider: `mock` or `playwright` |
+| `PLAYWRIGHT_HEADLESS` | `true` | Run Playwright in headless mode |
+
+### Installing Playwright browsers
+
+```bash
+cd packages/renderer && npx playwright install chromium
+```
+
+### Running the full local stack (Phase 2)
+
+```bash
+# Terminal 1: infrastructure
+docker compose up -d
+
+# Terminal 2: database setup (first time)
+cd packages/db && pnpm prisma migrate dev --name phase2
+
+# Terminal 3: web app
+pnpm dev
+
+# Terminal 4: preview worker (crawl + classify)
+cd packages/queue && npx ts-node src/run-worker.ts
+
+# Terminal 5: render worker (capture + store)
+cd packages/queue && npx ts-node src/run-render-worker.ts
+```
+
+Full flow: submit URL → QUEUED → CRAWLING → CLASSIFYING → READY_FOR_RENDER → RENDERING → RENDER_COMPLETE
+
+### Phase 3 TODOs
+
+- HTML rewriting (inject ZapSight widget, rewrite asset URLs)
+- Widget injection and configuration
+- Preview host serving (wildcard subdomain → rendered pages)
+- Cloudflare integration for edge serving

@@ -11,6 +11,8 @@
   "dependencies": {
     "@prisma/client": "^6.1.0",
     "@zapsight/crawl": "workspace:*",
+    "@zapsight/renderer": "workspace:*",
+    "@zapsight/storage": "workspace:*",
     "bullmq": "^5.30.1",
     "ioredis": "^5.4.2",
     "pino": "^9.6.0"

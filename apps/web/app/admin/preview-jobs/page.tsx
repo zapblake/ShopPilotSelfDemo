@@ -11,6 +11,8 @@ interface JobSummary {
   email: string | null;
   createdAt: string;
   crawlRun: { status: string; pageCount: number } | null;
+  renderedPageCount: number;
+  renderStatusSummary: string;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -19,6 +21,8 @@ const STATUS_COLORS: Record<string, string> = {
   CRAWLING: "text-blue-600",
   CLASSIFYING: "text-yellow-600",
   READY_FOR_RENDER: "text-green-600",
+  RENDERING: "text-purple-600",
+  RENDER_COMPLETE: "text-green-600",
   READY: "text-green-600",
   FAILED: "text-red-600",
   EXPIRED: "text-gray-400",
@@ -82,6 +86,7 @@ export default function AdminPreviewJobsPage() {
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Created</th>
                 <th className="px-4 py-3">Pages</th>
+                <th className="px-4 py-3">Rendered</th>
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
@@ -104,6 +109,15 @@ export default function AdminPreviewJobsPage() {
                     {job.crawlRun?.pageCount ?? "—"}
                   </td>
                   <td className="px-4 py-3">
+                    {job.renderedPageCount > 0 ? (
+                      <span className="text-xs">
+                        {job.renderedPageCount} ({job.renderStatusSummary})
+                      </span>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
                     <a
                       href={`/preview-jobs/${job.id}`}
                       className="text-blue-600 hover:underline"
@@ -115,7 +129,7 @@ export default function AdminPreviewJobsPage() {
               ))}
               {jobs.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
+                  <td colSpan={7} className="px-4 py-8 text-center text-gray-400">
                     No jobs found
                   </td>
                 </tr>

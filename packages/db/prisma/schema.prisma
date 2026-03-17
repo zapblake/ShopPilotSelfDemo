@@ -63,6 +63,10 @@ model RenderedPage {
   screenshotBlobKey String?
   extractedJson     Json?
   renderStatus      RenderStatus @default(PENDING)
+  errorMessage      String?
+  renderStartedAt   DateTime?
+  renderFinishedAt  DateTime?
+  renderDurationMs  Int?
   previewJob        PreviewJob   @relation(fields: [previewJobId], references: [id])
 }
 
@@ -101,6 +105,8 @@ enum JobStatus {
   CRAWLING
   CLASSIFYING
   READY_FOR_RENDER
+  RENDERING
+  RENDER_COMPLETE
   READY
   FAILED
   EXPIRED
