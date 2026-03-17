@@ -16,94 +16,351 @@ export function injectWidget(html: string, options: InjectionOptions): string {
 </script>
 <script src="${apiBaseUrl}/api/widget/preview-bundle.js"></script>
 <style>
-  #zapsight-widget-launcher {
+  #zapsight-widget-tab {
     position: fixed;
-    bottom: 24px;
-    right: 24px;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
     z-index: 99999;
     background: #1a1a2e;
     color: white;
     border: none;
-    border-radius: 50%;
-    width: 56px;
-    height: 56px;
-    font-size: 24px;
+    border-radius: 8px 0 0 8px;
+    padding: 14px 6px;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    box-shadow: -2px 0 12px rgba(0,0,0,0.2);
+    transition: padding-right 0.2s;
+  }
+  #zapsight-widget-tab:hover {
+    padding-right: 10px;
+  }
+  .zs-tab-icon {
+    font-size: 18px;
+  }
+  .zs-tab-caret {
+    font-size: 10px;
+    opacity: 0.7;
+    writing-mode: vertical-rl;
+    letter-spacing: 1px;
+    font-family: sans-serif;
+    font-weight: 600;
+    text-transform: uppercase;
   }
   #zapsight-widget-panel {
     position: fixed;
-    bottom: 96px;
-    right: 24px;
+    top: 0;
+    right: -420px;
+    width: 380px;
+    height: 100vh;
+    background: #0f0f1a;
     z-index: 99998;
-    width: 360px;
-    max-height: 500px;
-    background: white;
-    border-radius: 16px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
-    display: none;
+    display: flex;
     flex-direction: column;
-    overflow: hidden;
-    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    transition: right 0.3s ease;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    box-shadow: -4px 0 24px rgba(0,0,0,0.4);
   }
-  #zapsight-widget-panel.open { display: flex; }
-  .zs-header { background: #1a1a2e; color: white; padding: 16px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
-  .zs-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
-  .zs-message { padding: 8px 12px; border-radius: 12px; max-width: 85%; font-size: 14px; line-height: 1.4; }
-  .zs-message.bot { background: #f0f0f0; align-self: flex-start; }
-  .zs-message.user { background: #1a1a2e; color: white; align-self: flex-end; }
-  .zs-input-row { padding: 12px; border-top: 1px solid #eee; display: flex; gap: 8px; }
-  .zs-input { flex: 1; border: 1px solid #ddd; border-radius: 8px; padding: 8px 12px; font-size: 14px; outline: none; }
-  .zs-send { background: #1a1a2e; color: white; border: none; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 14px; }
-  .zs-demo-badge { position: fixed; top: 60px; right: 12px; background: rgba(255,107,53,0.9); color: white; font-size: 11px; padding: 4px 8px; border-radius: 4px; z-index: 99999; font-family: sans-serif; }
+  #zapsight-widget-panel.open {
+    right: 0;
+  }
+  .zs-header {
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .zs-header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .zs-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: 700;
+    color: white;
+  }
+  .zs-brand-icon {
+    font-size: 20px;
+  }
+  .zs-store-name {
+    font-size: 12px;
+    color: rgba(255,255,255,0.45);
+    margin-top: 2px;
+  }
+  .zs-header-right {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .zs-restart-btn {
+    background: rgba(220,38,38,0.15);
+    border: 1px solid rgba(220,38,38,0.3);
+    color: #f87171;
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .zs-close-btn {
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.5);
+    cursor: pointer;
+    font-size: 20px;
+    padding: 2px 6px;
+    line-height: 1;
+  }
+  .zs-greeting {
+    padding: 40px 24px 20px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .zs-greeting-title {
+    font-size: 28px;
+    font-weight: 800;
+    color: white;
+    margin-bottom: 10px;
+    line-height: 1.2;
+  }
+  .zs-greeting-subtitle {
+    font-size: 14px;
+    color: rgba(255,255,255,0.5);
+    line-height: 1.6;
+    margin-bottom: 0;
+  }
+  .zs-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0;
+  }
+  .zs-message {
+    padding: 10px 14px;
+    border-radius: 14px;
+    max-width: 88%;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .zs-message.bot {
+    background: rgba(255,255,255,0.07);
+    color: rgba(255,255,255,0.9);
+    align-self: flex-start;
+    border-radius: 4px 14px 14px 14px;
+  }
+  .zs-message.user {
+    background: #4f46e5;
+    color: white;
+    align-self: flex-end;
+    border-radius: 14px 4px 14px 14px;
+  }
+  .zs-suggestions {
+    padding: 0 20px 16px;
+  }
+  .zs-suggestions-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.35);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .zs-suggestions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+  }
+  .zs-chip {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 10px 8px;
+    cursor: pointer;
+    color: white;
+    font-size: 12px;
+    line-height: 1.4;
+    text-align: left;
+    transition: background 0.15s;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .zs-chip:hover {
+    background: rgba(255,255,255,0.1);
+  }
+  .zs-chip-icon {
+    font-size: 18px;
+  }
+  .zs-input-row {
+    padding: 14px 16px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    background: #0f0f1a;
+  }
+  .zs-input {
+    flex: 1;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 24px;
+    padding: 10px 18px;
+    font-size: 14px;
+    color: white;
+    outline: none;
+  }
+  .zs-input::placeholder {
+    color: rgba(255,255,255,0.3);
+  }
+  .zs-send {
+    background: #4f46e5;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+    transition: background 0.15s;
+  }
+  .zs-send:hover {
+    background: #4338ca;
+  }
+  .zs-domain-pill {
+    text-align: center;
+    padding: 8px 16px 12px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.25);
+  }
+  .zs-domain-pill span {
+    background: rgba(255,255,255,0.06);
+    border-radius: 20px;
+    padding: 4px 12px;
+  }
 </style>
 <script>
 (function() {
   var config = window.__ZAPSIGHT_PREVIEW_CONFIG__;
   if (!config) return;
 
-  // Demo badge
-  if (config.demoFlags && config.demoFlags.showDemoBadge) {
-    var badge = document.createElement('div');
-    badge.id = 'zs-demo-badge';
-    badge.className = 'zs-demo-badge';
-    badge.textContent = '\\u2728 ZapSight Preview';
-    document.body.appendChild(badge);
-  }
+  var storeName = config.storeContext ? config.storeContext.storeName : 'this store';
+  var productType = (config.storeContext && config.storeContext.productType) ? config.storeContext.productType : 'product';
+  var domain = config.normalizedDomain || '';
+  var state = 'greeting'; // 'greeting' or 'conversation'
 
-  // Launcher button
-  var launcher = document.createElement('button');
-  launcher.id = 'zapsight-widget-launcher';
-  launcher.textContent = '\\uD83D\\uDCAC';
-  launcher.title = 'Chat with AI Shopping Assistant';
-  document.body.appendChild(launcher);
+  // --- Tab ---
+  var tab = document.createElement('button');
+  tab.id = 'zapsight-widget-tab';
+  tab.innerHTML = '<span class="zs-tab-icon">\\uD83D\\uDECD\\uFE0F</span><span class="zs-tab-caret" id="zs-tab-caret">\\u2039</span>';
+  tab.title = 'Open AI Shopping Assistant';
+  document.body.appendChild(tab);
 
-  // Panel
+  // --- Panel ---
   var panel = document.createElement('div');
   panel.id = 'zapsight-widget-panel';
-
-  var storeName = config.storeContext ? config.storeContext.storeName : 'this store';
-  var greeting = (config.demoFlags && config.demoFlags.greetingOverride)
-    || ("Hi! I'm the AI shopping assistant for " + storeName + ". How can I help you today?");
-
-  panel.innerHTML = '<div class="zs-header"><span>AI Shopping Assistant</span><button onclick="document.getElementById(\\'zapsight-widget-panel\\').classList.remove(\\'open\\')" style="background:none;border:none;color:white;cursor:pointer;font-size:18px">\\u00D7</button></div><div class="zs-messages" id="zs-messages"><div class="zs-message bot">' + greeting + '</div></div><div class="zs-input-row"><input class="zs-input" id="zs-input" placeholder="Ask about products..." /><button class="zs-send" id="zs-send">Send</button></div>';
+  panel.innerHTML =
+    '<div class="zs-header">' +
+      '<div class="zs-header-left">' +
+        '<div class="zs-brand"><span class="zs-brand-icon">\\uD83D\\uDECD\\uFE0F</span> ShopPilot</div>' +
+        '<div class="zs-store-name">' + escapeHtml(storeName) + '</div>' +
+      '</div>' +
+      '<div class="zs-header-right">' +
+        '<button class="zs-restart-btn" id="zs-restart">\\u21BA Start Over</button>' +
+        '<button class="zs-close-btn" id="zs-close">\\u00D7</button>' +
+      '</div>' +
+    '</div>' +
+    '<div id="zs-greeting" class="zs-greeting">' +
+      '<div class="zs-greeting-title">Hi there \\uD83D\\uDC4B</div>' +
+      '<div class="zs-greeting-subtitle">Your AI shopping assistant \\u2014 here to help you find the perfect ' + escapeHtml(productType) + ' \\uD83C\\uDF19\\u2728</div>' +
+    '</div>' +
+    '<div class="zs-messages" id="zs-messages" style="display:none;"></div>' +
+    '<div class="zs-suggestions" id="zs-suggestions">' +
+      '<div class="zs-suggestions-label">\\u2728 Try asking</div>' +
+      '<div class="zs-suggestions-grid">' +
+        '<button class="zs-chip" data-text="Help me find the perfect mattress"><span class="zs-chip-icon">\\uD83D\\uDECF\\uFE0F</span> Help me find the perfect mattress</button>' +
+        '<button class="zs-chip" data-text="Show me cooling mattresses"><span class="zs-chip-icon">\\u2744\\uFE0F</span> Show me cooling mattresses</button>' +
+        '<button class="zs-chip" data-text="What\\u0027s on sale right now?"><span class="zs-chip-icon">\\uD83D\\uDCB0</span> What\\u0027s on sale right now?</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="zs-input-row">' +
+      '<input class="zs-input" id="zs-input" placeholder="What are you looking for?" />' +
+      '<button class="zs-send" id="zs-send">\\u27A4</button>' +
+    '</div>' +
+    '<div class="zs-domain-pill"><span>' + escapeHtml(domain) + '</span></div>';
   document.body.appendChild(panel);
 
-  // Toggle
-  launcher.addEventListener('click', function() {
-    panel.classList.toggle('open');
-    if (panel.classList.contains('open')) {
+  // --- Toggle ---
+  var caret = document.getElementById('zs-tab-caret');
+  tab.addEventListener('click', function() {
+    var isOpen = panel.classList.toggle('open');
+    caret.textContent = isOpen ? '\\u203A' : '\\u2039';
+    if (isOpen) {
       document.getElementById('zs-input').focus();
       logEvent('widget_opened');
     }
   });
 
-  // Send message
+  // --- Close ---
+  document.getElementById('zs-close').addEventListener('click', function() {
+    panel.classList.remove('open');
+    caret.textContent = '\\u2039';
+  });
+
+  // --- Start Over ---
+  document.getElementById('zs-restart').addEventListener('click', function() {
+    document.getElementById('zs-messages').innerHTML = '';
+    document.getElementById('zs-messages').style.display = 'none';
+    document.getElementById('zs-greeting').style.display = 'flex';
+    document.getElementById('zs-suggestions').style.display = 'block';
+    state = 'greeting';
+  });
+
+  // --- Chips ---
+  var chips = document.querySelectorAll('.zs-chip');
+  for (var i = 0; i < chips.length; i++) {
+    chips[i].addEventListener('click', function() {
+      var text = this.getAttribute('data-text');
+      if (text) {
+        document.getElementById('zs-input').value = text;
+        sendMessage();
+      }
+    });
+  }
+
+  // --- Send ---
   function sendMessage() {
     var input = document.getElementById('zs-input');
     var text = input.value.trim();
     if (!text) return;
     input.value = '';
+
+    if (state === 'greeting') {
+      state = 'conversation';
+      document.getElementById('zs-greeting').style.display = 'none';
+      document.getElementById('zs-suggestions').style.display = 'none';
+      document.getElementById('zs-messages').style.display = 'flex';
+    }
+
     appendMessage(text, 'user');
     logEvent('message_sent', { text: text });
     setTimeout(function() {
@@ -124,6 +381,12 @@ export function injectWidget(html: string, options: InjectionOptions): string {
     el.textContent = text;
     msgs.appendChild(el);
     msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  function escapeHtml(str) {
+    var d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
   }
 
   function getDemoResponse(text, cfg) {
