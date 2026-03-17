@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model PreviewJob {
+  id               String    @id @default(cuid())
+  submittedUrl     String
+  normalizedDomain String
+  status           JobStatus @default(PENDING)
+  errorCode        String?
+  errorMessage     String?
+  email            String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  completedAt      DateTime?
+  crawlRuns        CrawlRun[]
+  renderedPages    RenderedPage[]
+  previewHosts     PreviewHost[]
+  widgetConfig     WidgetPreviewConfig?
+  events           PreviewEvent[]
+}
+
+model CrawlRun {
+  id              String      @id @default(cuid())
+  previewJobId    String
+  provider        String
+  providerJobId   String?
+  status          CrawlStatus @default(PENDING)
+  rawResultJson   Json?
+  startedAt       DateTime?
+  finishedAt      DateTime?
+  previewJob      PreviewJob      @relation(fields: [previewJobId], references: [id])
+  discoveredPages DiscoveredPage[]
+}
+
+model DiscoveredPage {
+  id                String   @id @default(cuid())
+  crawlRunId        String
+  url               String
+  normalizedUrl     String
+  title             String?
+  statusCode        Int?
+  pageTypeCandidate String?
+  selected          Boolean  @default(false)
+  scoresJson        Json?
+  crawlRun          CrawlRun @relation(fields: [crawlRunId], references: [id])
+}
+
+model RenderedPage {
+  id                String       @id @default(cuid())
+  previewJobId      String
+  sourceUrl         String
+  previewPath       String
+  htmlBlobKey       String?
+  screenshotBlobKey String?
+  extractedJson     Json?
+  renderStatus      RenderStatus @default(PENDING)
+  previewJob        PreviewJob   @relation(fields: [previewJobId], references: [id])
+}
+
+model PreviewHost {
+  id           String     @id @default(cuid())
+  previewJobId String
+  hostname     String     @unique
+  active       Boolean    @default(true)
+  previewJob   PreviewJob @relation(fields: [previewJobId], references: [id])
+}
+
+model WidgetPreviewConfig {
+  id                   String     @id @default(cuid())
+  previewJobId         String     @unique
+  storeName            String?
+  primaryColor         String?
+  extractedCatalogJson Json?
+  promptContext        String?
+  mode                 String     @default("preview")
+  previewJob           PreviewJob @relation(fields: [previewJobId], references: [id])
+}
+
+model PreviewEvent {
+  id           String     @id @default(cuid())
+  previewJobId String
+  sessionId    String?
+  eventName    String
+  eventPayload Json?
+  createdAt    DateTime   @default(now())
+  previewJob   PreviewJob @relation(fields: [previewJobId], references: [id])
+}
+
+enum JobStatus {
+  PENDING
+  CRAWLING
+  RENDERING
+  READY
+  FAILED
+  EXPIRED
+}
+
+enum CrawlStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum RenderStatus {
+  PENDING
+  RENDERING
+  DONE
+  FAILED
+}
