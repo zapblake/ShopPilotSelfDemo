@@ -245,6 +245,10 @@ Events are stored in the `PreviewEvent` table with optional session ID support.
 
 Configure SMTP env vars to receive an email when someone submits a preview request. Copy the `SMTP_*` variables from `.env.example` into your `.env` and set `SMTP_PASS` to a Gmail app password. If SMTP is not configured, notifications are silently skipped.
 
+### Telegram Notifications
+
+Telegram notifications — set `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` to receive real-time alerts when someone engages with a preview. Notifications fire on `widget_opened` and `cta_clicked` events. If the env vars are not set, Telegram notifications are silently skipped.
+
 ### Phase 5 TODOs
 
 - Real LLM-powered chat responses via Claude API

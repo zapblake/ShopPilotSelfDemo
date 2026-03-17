@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { sendTelegramNotification } from "@/lib/telegram";
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,6 +29,40 @@ export async function POST(request: NextRequest) {
         sessionId: sessionId ?? null,
       },
     });
+
+    // Fire-and-forget Telegram notifications for high-signal events
+    if (eventName === "widget_opened" || eventName === "cta_clicked") {
+      prisma.previewJob
+        .findUnique({
+          where: { id: previewJobId },
+          select: { normalizedDomain: true, email: true },
+        })
+        .then((job) => {
+          if (!job) return;
+          if (eventName === "widget_opened") {
+            sendTelegramNotification(
+              [
+                `🔍 <b>Widget Opened</b>`,
+                `Someone opened the ZapSight widget on their preview.`,
+                `Domain: ${job.normalizedDomain}`,
+                `Job: ${previewJobId}`,
+              ].join("\n")
+            );
+          } else if (eventName === "cta_clicked") {
+            sendTelegramNotification(
+              [
+                `🔥 <b>HOT LEAD — CTA Clicked!</b>`,
+                `Someone clicked "Book a 15-Min Call" in the preview widget.`,
+                `Domain: ${job.normalizedDomain}`,
+                `Email: ${job.email || "not provided"}`,
+                `Job: ${previewJobId}`,
+                `Preview: https://zapsight.us/p/${previewJobId}`,
+              ].join("\n")
+            );
+          }
+        })
+        .catch(() => {});
+    }
 
     return NextResponse.json(
       { success: true, data: { id: event.id } },
