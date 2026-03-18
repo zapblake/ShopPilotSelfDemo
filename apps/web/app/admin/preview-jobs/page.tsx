@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
 interface JobSummary {
@@ -30,7 +30,7 @@ const STATUS_COLORS: Record<string, string> = {
   EXPIRED: "text-gray-400",
 };
 
-export default function AdminPreviewJobsPage() {
+function AdminPreviewJobsContent() {
   const searchParams = useSearchParams();
   const secret = searchParams.get("secret");
   const [jobs, setJobs] = useState<JobSummary[]>([]);
@@ -160,5 +160,17 @@ export default function AdminPreviewJobsPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function AdminPreviewJobsPage() {
+  return (
+    <Suspense fallback={
+      <main className="flex min-h-screen items-center justify-center">
+        <p className="text-gray-500">Loading...</p>
+      </main>
+    }>
+      <AdminPreviewJobsContent />
+    </Suspense>
   );
 }
