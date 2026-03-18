@@ -1,44 +1,66 @@
-import { NextRequest } from "next/server";
-import { Queue } from "bullmq";
+import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 import { normalizeUrl } from "@/lib/url-utils";
 
-let queue: Queue | null = null;
-
-function getQueue() {
-  if (!queue) {
-    const redisUrl = process.env.REDIS_URL ?? "redis://localhost:6379";
+// Queue enqueue is best-effort — if Redis is unavailable, job is still created in DB
+async function tryEnqueue(jobId: string, submittedUrl: string, normalizedDomain: string) {
+  try {
+    const redisUrl = process.env.REDIS_URL ?? "";
+    if (!redisUrl || redisUrl.includes("localhost")) {
+      logger.warn("REDIS_URL not configured or localhost — skipping queue enqueue");
+      return;
+    }
+    const { Queue } = await import("bullmq");
     const parsed = new URL(redisUrl);
-    queue = new Queue("preview-jobs", {
+    const q = new Queue("preview-jobs", {
       connection: {
         host: parsed.hostname,
         port: Number(parsed.port) || 6379,
         password: parsed.password || undefined,
+        username: parsed.username || undefined,
+        tls: parsed.protocol === "rediss:" ? {} : undefined,
         maxRetriesPerRequest: null,
       },
     });
+    await q.add("preview", { previewJobId: jobId, submittedUrl, normalizedDomain });
+    await q.close();
+  } catch (err) {
+    logger.warn({ error: err }, "Failed to enqueue preview job — will need manual trigger");
   }
-  return queue;
+}
+
+async function parseBody(request: NextRequest): Promise<{ url?: string; email?: string; storeName?: string }> {
+  const contentType = request.headers.get("content-type") ?? "";
+  if (contentType.includes("application/json")) {
+    return request.json();
+  }
+  // Handle HTML form POST (application/x-www-form-urlencoded)
+  const text = await request.text();
+  const params = new URLSearchParams(text);
+  return {
+    url: params.get("url") ?? undefined,
+    email: params.get("email") ?? undefined,
+    storeName: params.get("storeName") ?? undefined,
+  };
 }
 
 export async function POST(request: NextRequest) {
+  const isFormSubmission = (request.headers.get("content-type") ?? "").includes("application/x-www-form-urlencoded");
+
   try {
-    const body = await request.json();
-    const { url, email, storeName } = body as {
-      url?: string;
-      email?: string;
-      storeName?: string;
-    };
+    const { url, email, storeName } = await parseBody(request);
 
     if (!url || typeof url !== "string") {
+      if (isFormSubmission) return NextResponse.redirect(new URL("/?error=url_required", request.url), 303);
       return errorResponse("VALIDATION_ERROR", "url is required", 400);
     }
 
     const normalized = normalizeUrl(url);
     if (!normalized) {
+      if (isFormSubmission) return NextResponse.redirect(new URL("/?error=invalid_url", request.url), 303);
       return errorResponse("VALIDATION_ERROR", "Invalid URL format", 400);
     }
 
@@ -51,22 +73,16 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    await getQueue().add("preview", {
-      previewJobId: job.id,
-      submittedUrl: normalized.url,
-      normalizedDomain: normalized.domain,
-    });
+    // Best-effort queue enqueue
+    tryEnqueue(job.id, normalized.url, normalized.domain).catch(() => {});
 
     if (storeName) {
       await prisma.widgetPreviewConfig.create({
         data: { previewJobId: job.id, storeName },
-      });
+      }).catch(() => {});
     }
 
-    logger.info(
-      { jobId: job.id, url, domain: normalized.domain },
-      "Preview job created and enqueued"
-    );
+    logger.info({ jobId: job.id, url, domain: normalized.domain }, "Preview job created");
 
     // Fire-and-forget email notification
     try {
@@ -82,69 +98,34 @@ export async function POST(request: NextRequest) {
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://zapsight.us";
         const statusUrl = `${appUrl}/preview-jobs/${job.id}`;
 
-        // 1. Notify Blake
-        transporter
-          .sendMail({
-            from: smtpUser,
-            to: process.env.NOTIFICATION_EMAIL_TO || "blake@zapsight.com",
-            subject: `🚀 New ZapSight Preview Request — ${normalized.domain}`,
-            text: [
-              "New preview request submitted.",
-              "",
-              `Domain: ${normalized.domain}`,
-              `URL: ${url}`,
-              `Email: ${email || "not provided"}`,
-              `Job ID: ${job.id}`,
-              `Status Page: ${statusUrl}`,
-              "",
-              `Submitted at: ${new Date().toISOString()}`,
-            ].join("\n"),
-          })
-          .catch((err: unknown) => {
-            logger.warn({ error: err }, "Failed to send Blake notification email");
-          });
+        transporter.sendMail({
+          from: smtpUser,
+          to: process.env.NOTIFICATION_EMAIL_TO || "blake@zapsight.com",
+          subject: `🚀 New ZapSight Preview Request — ${normalized.domain}`,
+          text: `New preview request.\n\nDomain: ${normalized.domain}\nEmail: ${email || "not provided"}\nJob ID: ${job.id}\nStatus: ${statusUrl}`,
+        }).catch(() => {});
 
-        // 2. Send merchant their preview link
         if (email) {
-          transporter
-            .sendMail({
-              from: smtpUser,
-              to: email,
-              subject: `Your ZapSight preview for ${normalized.domain} is being built ✨`,
-              text: [
-                `Hi there,`,
-                ``,
-                `We're building your Shop Pilot preview for ${normalized.domain}.`,
-                ``,
-                `It takes about 30 seconds. You can watch it build here:`,
-                statusUrl,
-                ``,
-                `Once it's ready, you'll see what the AI shopping assistant looks like on your store — no install required.`,
-                ``,
-                `Questions? Reply to this email or book a call: https://calendly.com/blake-zapsight/30min`,
-                ``,
-                `— Blake at ZapSight`,
-              ].join("\n"),
-            })
-            .catch((err: unknown) => {
-              logger.warn({ error: err }, "Failed to send merchant preview email");
-            });
+          transporter.sendMail({
+            from: smtpUser,
+            to: email,
+            subject: `Your ZapSight preview for ${normalized.domain} is being built ✨`,
+            text: `Hi,\n\nWe're building your Shop Pilot preview for ${normalized.domain}.\n\nWatch it build: ${statusUrl}\n\n— Blake at ZapSight`,
+          }).catch(() => {});
         }
       }
-    } catch (emailErr) {
-      logger.warn({ error: emailErr }, "Failed to send notification email");
+    } catch { /* silent */ }
+
+    // Form submission → redirect to status page
+    if (isFormSubmission) {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://zapsight.us";
+      return NextResponse.redirect(new URL(`/preview-jobs/${job.id}`, appUrl), 303);
     }
 
-    return successResponse(
-      {
-        jobId: job.id,
-        status: "QUEUED",
-        statusUrl: `/preview-jobs/${job.id}`,
-      },
-      201
-    );
+    return successResponse({ jobId: job.id, status: "QUEUED", statusUrl: `/preview-jobs/${job.id}` }, 201);
   } catch (err) {
     logger.error({ error: err }, "Failed to create preview job");
+    if (isFormSubmission) return NextResponse.redirect(new URL("/?error=server_error", request.url), 303);
     return errorResponse("INTERNAL_ERROR", "Internal server error", 500);
   }
 }

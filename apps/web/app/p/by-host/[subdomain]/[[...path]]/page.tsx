@@ -62,7 +62,7 @@ function NotFoundPage({ subdomain }: { subdomain: string }) {
             Enter your email and we'll build a live preview of our AI shopping assistant on your store —
             <span className="highlight"> no install, no commitment.</span>
           </p>
-          <form action="https://zapsight.us/api/preview-jobs" method="POST" id="pf">
+          <form action="/api/preview-jobs" method="POST" id="pf">
             <input type="hidden" name="url" value={`https://${subdomain.replace(/-/g, '')}.com`} />
             <div className="form-row">
               <input className="input" type="email" name="email" placeholder="your@email.com" required />
