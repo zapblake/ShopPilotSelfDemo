@@ -4,10 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node -e \"require('child_process').execSync('node_modules/.bin/prisma generate --schema=../../packages/db/prisma/schema.prisma',{stdio:'inherit',env:{...process.env,DATABASE_URL:process.env.DATABASE_URL||'postgresql://x:x@localhost/x'}})\" && next build",
     "start": "next start",
-    "lint": "next lint",
-    "postinstall": "node -e \"if(process.env.VERCEL){require('child_process').execSync('npx prisma generate --schema=../../packages/db/prisma/schema.prisma',{stdio:'inherit'})}\""
+    "lint": "next lint"
   },
   "dependencies": {
     "@paralleldrive/cuid2": "^2.2.2",
