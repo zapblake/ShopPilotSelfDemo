@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { prisma } from "@/lib/prisma";
 import { timeAgo } from "@/lib/time-utils";
 import Link from "next/link";
@@ -189,7 +190,7 @@ export default async function JobDetailPage({
       )}
 
       {/* Crawl Runs & Discovered Pages */}
-      {job.crawlRuns.map((run) => (
+      {job.crawlRuns.map((run: any) => (
         <section key={run.id} className="mt-6 rounded-xl border border-white/[0.08] bg-[#1a1a1a]/80 p-6">
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-500">
             Crawl Run — {run.status}
@@ -211,7 +212,7 @@ export default async function JobDetailPage({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.04]">
-                  {run.discoveredPages.map((page) => (
+                  {run.discoveredPages.map((page: any) => (
                     <tr key={page.id} className="hover:bg-white/[0.03]">
                       <td className="max-w-[300px] truncate px-4 py-2 text-gray-300">
                         {page.url}
@@ -255,7 +256,7 @@ export default async function JobDetailPage({
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.04]">
-                {job.renderedPages.map((rp) => (
+                {job.renderedPages.map((rp: any) => (
                   <tr key={rp.id} className="hover:bg-white/[0.03]">
                     <td className="max-w-[250px] truncate px-4 py-2 text-gray-300">
                       {rp.previewPath}
@@ -290,7 +291,7 @@ export default async function JobDetailPage({
           <p className="text-sm text-gray-500">No events recorded</p>
         ) : (
           <div className="space-y-3">
-            {job.events.map((event) => (
+            {job.events.map((event: any) => (
               <div
                 key={event.id}
                 className="flex flex-wrap items-start gap-3 rounded-lg border border-white/[0.04] bg-white/[0.02] px-4 py-3"
