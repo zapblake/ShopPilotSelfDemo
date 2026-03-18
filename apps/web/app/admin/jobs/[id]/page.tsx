@@ -168,7 +168,7 @@ export default async function JobDetailPage({
             Preview Hosts
           </h2>
           <div className="space-y-2">
-            {job.previewHosts.map((host) => (
+            {job.previewHosts.map((host: { id: string; active: boolean; hostname: string; previewBaseUrl?: string | null }) => (
               <div key={host.id} className="flex items-center gap-3 text-sm">
                 <span className={`h-2 w-2 rounded-full ${host.active ? "bg-emerald-400" : "bg-gray-600"}`} />
                 <code className="text-gray-300">{host.hostname}</code>
