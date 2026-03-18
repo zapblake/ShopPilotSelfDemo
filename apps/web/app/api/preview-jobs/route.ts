@@ -118,7 +118,9 @@ export async function POST(request: NextRequest) {
 
     // Form submission → redirect to status page
     if (isFormSubmission) {
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://zapsight.us";
+      const host = request.headers.get('host') || '';
+      const proto = host.includes('localhost') ? 'http' : 'https';
+      const appUrl = `${proto}://${host}`;
       return NextResponse.redirect(new URL(`/preview-jobs/${job.id}`, appUrl), 303);
     }
 
