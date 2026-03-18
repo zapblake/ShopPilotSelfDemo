@@ -85,7 +85,7 @@ export async function buildWidgetConfig(
       .replace(/(^|\.)(\w)/g, (_m, _p, c: string) => ` ${c.toUpperCase()}`)
       .trim();
 
-  const productTypes = [
+  const productTypes: string[] = [
     ...new Set(
       discoveredPages
         .map((p) => p.pageTypeCandidate)
