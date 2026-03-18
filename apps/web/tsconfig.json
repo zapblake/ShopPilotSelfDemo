@@ -16,7 +16,13 @@
     "incremental": true,
     "plugins": [{ "name": "next" }],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@zapsight/storage": ["../../packages/storage/src/index.ts"],
+      "@zapsight/preview": ["../../packages/preview/src/index.ts"],
+      "@zapsight/crawl": ["../../packages/crawl/src/index.ts"],
+      "@zapsight/db": ["../../packages/db/src/index.ts"],
+      "@zapsight/widget": ["../../packages/widget/src/index.ts"],
+      "@zapsight/renderer": ["../../packages/renderer/src/index.ts"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
