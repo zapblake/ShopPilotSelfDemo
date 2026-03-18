@@ -1,5 +1,6 @@
 {
   "framework": "nextjs",
-  "buildCommand": "next build",
-  "installCommand": "npm install --legacy-peer-deps"
+  "rootDirectory": "apps/web",
+  "installCommand": "cd ../.. && pnpm install",
+  "buildCommand": "cd ../.. && pnpm --filter @zapsight/web build"
 }
