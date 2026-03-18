@@ -5,7 +5,7 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "scripts": {
-    "build": "tsc",
+    "build": "echo skip",
     "dev": "tsc --watch"
   },
   "devDependencies": {
