@@ -39,6 +39,21 @@ importers:
       '@types/nodemailer':
         specifier: ^7.0.11
         version: 7.0.11
+      '@zapsight/crawl':
+        specifier: workspace:*
+        version: link:../../packages/crawl
+      '@zapsight/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@zapsight/preview':
+        specifier: workspace:*
+        version: link:../../packages/preview
+      '@zapsight/storage':
+        specifier: workspace:*
+        version: link:../../packages/storage
+      '@zapsight/widget':
+        specifier: workspace:*
+        version: link:../../packages/widget
       bullmq:
         specifier: ^5.30.1
         version: 5.71.0
