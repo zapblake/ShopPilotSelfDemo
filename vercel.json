@@ -1,6 +1,6 @@
 {
   "framework": "nextjs",
-  "rootDirectory": "apps/web",
-  "installCommand": "cd ../.. && pnpm install",
-  "buildCommand": "cd ../.. && pnpm --filter @zapsight/web build"
+  "installCommand": "npm install -g pnpm && pnpm install",
+  "buildCommand": "pnpm --filter @zapsight/web build",
+  "outputDirectory": "apps/web/.next"
 }
