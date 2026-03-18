@@ -200,7 +200,7 @@ export default async function ByHostPreviewPage({ params }: ByHostPageProps) {
     mode: "subdomain",
   });
 
-  const widgetConfig = await buildWidgetConfig(prisma, jobId, previewPath);
+  const widgetConfig = await buildWidgetConfig(jobId, previewPath);
   if (widgetConfig) {
     html = injectWidget(html, { config: widgetConfig, apiBaseUrl: appUrl });
   }
