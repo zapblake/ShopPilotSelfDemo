@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
     // Parse optional product cards out of the response
     const productMatch = raw.match(/<products>([\s\S]*?)<\/products>/);
     let products: Array<{ title: string; url: string; reason?: string }> = [];
-    let reply = raw.replace(/<products>[\s\S]*?<\/products>/, "").trim();
+    const reply = raw.replace(/<products>[\s\S]*?<\/products>/, "").trim();
 
     if (productMatch) {
       try {
