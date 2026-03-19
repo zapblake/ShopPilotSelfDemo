@@ -270,7 +270,7 @@ export function JobStatusView({ jobId }: { jobId: string }) {
           color: isFailed ? "#ff6b6b" : isReady ? "#22c55e" : "rgba(255,255,255,0.7)",
           lineHeight: 1.5,
         }}>
-          {getStatusMessage(job.status)}
+          {isFailed ? "We hit a snag 😕" : getStatusMessage(job.status)}
         </p>
         {isFailed && (
           <p style={{ fontSize: "13px", color: "rgba(255,107,107,0.6)", marginTop: "8px" }}>

@@ -6,7 +6,7 @@ set -e
 echo "🚀 Building and deploying to demo.zapsight.us..."
 
 # Deploy to Vercel (preview first, no --prod flag to avoid wildcard alias)
-DEPLOY_URL=$(vercel deploy --yes 2>&1 | tail -1)
+DEPLOY_URL=$(vercel deploy --yes 2>&1 | grep -Eo "https://web-[a-z0-9]+-blake-austins-projects\.vercel\.app" | tail -1)
 echo "✅ Preview deployed: $DEPLOY_URL"
 
 # Explicitly alias ONLY demo.zapsight.us — never the apex or wildcard
