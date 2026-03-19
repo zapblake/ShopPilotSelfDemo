@@ -16,6 +16,35 @@ export function injectWidget(html: string, options: InjectionOptions): string {
 </script>
 <script src="${apiBaseUrl}/api/widget/preview-bundle.js"></script>
 <style>
+  /* === ZapSight Preview: Reset store interference === */
+
+  /* Always allow scrolling — stores lock body scroll for their modals */
+  html, body { overflow: auto !important; }
+
+  /* Nuke common popup/modal/overlay patterns baked into scraped HTML */
+  [class*="modal"]:not(#zapsight-widget-panel):not(#zapsight-widget-tab),
+  [class*="popup"]:not(#zapsight-widget-panel):not(#zapsight-widget-tab),
+  [class*="overlay"]:not(#zapsight-widget-panel):not(#zapsight-widget-tab),
+  [class*="dialog"]:not(#zapsight-widget-panel):not(#zapsight-widget-tab),
+  [class*="lightbox"]:not(#zapsight-widget-panel):not(#zapsight-widget-tab),
+  [id*="modal"]:not(#zapsight-widget-panel):not(#zapsight-widget-tab),
+  [id*="popup"]:not(#zapsight-widget-panel):not(#zapsight-widget-tab),
+  [id*="overlay"]:not(#zapsight-widget-panel):not(#zapsight-widget-tab),
+  [role="dialog"]:not(#zapsight-widget-panel):not(#zapsight-widget-tab) {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+
+  /* When panel is open, push body content left so it's not hidden under the panel */
+  body.zs-panel-open {
+    margin-right: 380px !important;
+    transition: margin-right 0.3s ease;
+  }
+  body {
+    transition: margin-right 0.3s ease;
+  }
+
   @keyframes zs-tab-pulse {
     0%   { box-shadow: -2px 0 12px rgba(79,70,229,0.4), 0 0 0 0 rgba(79,70,229,0.5); }
     70%  { box-shadow: -2px 0 12px rgba(79,70,229,0.4), 0 0 0 10px rgba(79,70,229,0); }
@@ -326,6 +355,7 @@ export function injectWidget(html: string, options: InjectionOptions): string {
   tab.addEventListener('click', function() {
     var isOpen = panel.classList.toggle('open');
     tab.classList.toggle('hidden', isOpen);
+    document.body.classList.toggle('zs-panel-open', isOpen);
     if (isOpen) {
       document.getElementById('zs-input').focus();
       logEvent('widget_opened');
@@ -336,6 +366,7 @@ export function injectWidget(html: string, options: InjectionOptions): string {
   document.getElementById('zs-close').addEventListener('click', function() {
     panel.classList.remove('open');
     tab.classList.remove('hidden');
+    document.body.classList.remove('zs-panel-open');
   });
 
   // --- Start Over ---
@@ -450,6 +481,38 @@ export function injectWidget(html: string, options: InjectionOptions): string {
   }
 
   logEvent('widget_loaded', { pageType: config.pageContext ? config.pageContext.pageType : 'unknown' });
+
+  // Kill popups/modals baked into scraped HTML
+  function killPopups() {
+    var selectors = [
+      '[class*="modal"]', '[class*="popup"]', '[class*="overlay"]',
+      '[class*="lightbox"]', '[class*="newsletter"]', '[class*="email-capture"]',
+      '[id*="modal"]', '[id*="popup"]', '[id*="overlay"]',
+      '[role="dialog"]'
+    ];
+    selectors.forEach(function(sel) {
+      try {
+        document.querySelectorAll(sel).forEach(function(el) {
+          if (el.id && el.id.startsWith('zapsight')) return; // never touch our own elements
+          var style = window.getComputedStyle(el);
+          if (style.position === 'fixed' || style.position === 'absolute') {
+            var z = parseInt(style.zIndex) || 0;
+            if (z > 100 && z < 99990) { // only kill store modals, not our widget
+              el.style.display = 'none';
+            }
+          }
+        });
+      } catch(e) {}
+    });
+    // Always restore scroll
+    document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
+  }
+
+  // Run immediately + after short delay (for JS-injected modals)
+  killPopups();
+  setTimeout(killPopups, 500);
+  setTimeout(killPopups, 1500);
 })();
 </script>`;
 
