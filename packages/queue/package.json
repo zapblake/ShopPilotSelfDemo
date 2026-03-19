@@ -16,11 +16,13 @@
     "@zapsight/storage": "workspace:*",
     "bullmq": "^5.30.1",
     "ioredis": "^5.4.2",
+    "nodemailer": "^8.0.2",
     "pg": "^8.20.0",
     "pino": "^9.6.0",
     "tsx": "^4.19.2"
   },
   "devDependencies": {
+    "@types/nodemailer": "^7.0.11",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.2"
   }

@@ -3,6 +3,7 @@ import pino from "pino";
 import { MockRendererProvider, PlaywrightRendererProvider } from "@zapsight/renderer";
 import type { RendererProvider } from "@zapsight/renderer";
 import { getStorageAdapter } from "@zapsight/storage";
+import { sendPreviewReadyEmail } from "../lib/mailer.js";
 
 const logger = pino({ name: "render-worker" });
 const prisma = new PrismaClient();
@@ -51,6 +52,11 @@ async function processNextRenderJob(): Promise<boolean> {
         where: { id: previewJobId },
         data: { status: "PREVIEW_READY", completedAt: new Date() },
       });
+      if (job.email) {
+        await sendPreviewReadyEmail({ to: job.email, domain: job.normalizedDomain, jobId: previewJobId }).catch((e) =>
+          logger.warn({ e }, "Failed to send preview-ready email")
+        );
+      }
       return true;
     }
 
@@ -146,6 +152,13 @@ async function processNextRenderJob(): Promise<boolean> {
     });
 
     logger.info({ previewJobId }, "Render job completed, preview ready");
+
+    // 5. Notify the lead by email if they provided one
+    if (job.email) {
+      await sendPreviewReadyEmail({ to: job.email, domain: job.normalizedDomain, jobId: previewJobId }).catch((e) =>
+        logger.warn({ e }, "Failed to send preview-ready email")
+      );
+    }
   } catch (err) {
     logger.error({ previewJobId, error: err }, "Render job failed fatally");
 
