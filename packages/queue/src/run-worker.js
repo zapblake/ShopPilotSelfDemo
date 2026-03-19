@@ -11,9 +11,12 @@ if (!REDIS_URL) {
   process.exit(1);
 }
 
-const connection = new IORedis.default
-  ? new IORedis.default(REDIS_URL, { maxRetriesPerRequest: null })
-  : new IORedis(REDIS_URL, { maxRetriesPerRequest: null });
+const RedisClient = IORedis.default || IORedis;
+const tlsOptions = REDIS_URL.startsWith("rediss://") ? { tls: {} } : {};
+const connection = new RedisClient(REDIS_URL, {
+  maxRetriesPerRequest: null,
+  ...tlsOptions,
+});
 
 const STATUSES = [
   "CRAWLING",
