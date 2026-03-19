@@ -566,28 +566,7 @@ export function injectWidget(html: string, options: InjectionOptions): string {
 
   logEvent('widget_loaded', { pageType: config.pageContext ? config.pageContext.pageType : 'unknown' });
 
-  // --- Preview notice bar (shown on all real previews, skipped if page has its own) ---
-  var noticeDomain = config.normalizedDomain || (config.storeContext && config.storeContext.domain) || '';
-  if (noticeDomain && !window.__ZS_SKIP_NOTICE_BANNER__ && !document.getElementById('zs-preview-notice')) {
-    var notice = document.createElement('div');
-    notice.id = 'zs-preview-notice';
-    notice.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99990;background:linear-gradient(90deg,#1a1a1a,#1e1a2e);color:rgba(255,255,255,0.85);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.08);gap:16px;flex-wrap:wrap;';
-    notice.innerHTML =
-      '<span style="display:flex;align-items:center;gap:8px;flex:1;min-width:200px;">' +
-        '<span style="font-size:16px;">⚡</span>' +
-        '<span>This is a <strong style="color:#ff6b35;">ZapSight preview</strong> of <strong style="color:white">' + escapeHtml(noticeDomain) + '</strong> — showing how Shop Pilot would look on your real store.</span>' +
-      '</span>' +
-      '<span style="display:flex;align-items:center;gap:10px;flex-shrink:0;">' +
-        '<a href="https://calendly.com/blake-zapsight/30min" target="_blank" style="display:inline-block;background:linear-gradient(135deg,#ff6b35,#ff3d7f);color:white;font-weight:700;font-size:12px;padding:7px 16px;border-radius:20px;text-decoration:none;white-space:nowrap;">Book a Custom Demo →</a>' +
-        '<span id="zs-notice-close" style="color:rgba(255,255,255,0.35);cursor:pointer;font-size:20px;padding:0 6px;line-height:1;user-select:none;">×</span>' +
-      '</span>';
-    document.body.prepend(notice);
-    document.body.style.paddingTop = '53px';
-    document.getElementById('zs-notice-close').addEventListener('click', function() {
-      notice.style.display = 'none';
-      document.body.style.paddingTop = '0';
-    });
-  }
+  // Notice bar is injected server-side (see injectWidget TypeScript code below)
 
   // Kill popups/modals baked into scraped HTML
   function killPopups() {
@@ -623,10 +602,34 @@ export function injectWidget(html: string, options: InjectionOptions): string {
 })();
 </script>`;
 
-  // Inject before </body> or append to end
-  const bodyCloseIndex = html.lastIndexOf("</body>");
-  if (bodyCloseIndex !== -1) {
-    return html.slice(0, bodyCloseIndex) + widgetHtml + html.slice(bodyCloseIndex);
+  // Server-side notice banner — injected into HTML directly so store CSS/JS can't interfere
+  let result = html;
+  if (!skipNoticeBanner) {
+    const domain = config.normalizedDomain || config.storeContext?.domain || "";
+    const noticeBanner = domain ? `
+<div id="zs-preview-notice" style="position:fixed;top:0;left:0;right:0;z-index:99995;background:linear-gradient(90deg,#1a1a1a,#1e1a2e);color:rgba(255,255,255,0.85);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.08);gap:16px;flex-wrap:wrap;">
+  <span style="display:flex;align-items:center;gap:8px;flex:1;min-width:200px;">
+    <span style="font-size:16px;">⚡</span>
+    <span>This is a <strong style="color:#ff6b35;">ZapSight preview</strong> of <strong style="color:white">${domain}</strong> — see how Shop Pilot would look on your real store.</span>
+  </span>
+  <span style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+    <a href="https://calendly.com/blake-zapsight/30min" target="_blank" style="display:inline-block;background:linear-gradient(135deg,#ff6b35,#ff3d7f);color:white;font-weight:700;font-size:12px;padding:7px 16px;border-radius:20px;text-decoration:none;white-space:nowrap;">Book a Custom Demo →</a>
+    <span onclick="this.closest('#zs-preview-notice').style.display='none';document.body.style.paddingTop='0'" style="color:rgba(255,255,255,0.35);cursor:pointer;font-size:20px;padding:0 6px;line-height:1;user-select:none;">×</span>
+  </span>
+</div>
+<script>document.body.style.paddingTop='53px';</script>` : "";
+
+    const bodyOpenIndex = result.indexOf("<body");
+    const bodyTagEnd = bodyOpenIndex !== -1 ? result.indexOf(">", bodyOpenIndex) + 1 : -1;
+    if (bodyTagEnd > 0 && noticeBanner) {
+      result = result.slice(0, bodyTagEnd) + noticeBanner + result.slice(bodyTagEnd);
+    }
   }
-  return html + widgetHtml;
+
+  // Inject widget before </body> or append to end
+  const bodyCloseIndex = result.lastIndexOf("</body>");
+  if (bodyCloseIndex !== -1) {
+    return result.slice(0, bodyCloseIndex) + widgetHtml + result.slice(bodyCloseIndex);
+  }
+  return result + widgetHtml;
 }
