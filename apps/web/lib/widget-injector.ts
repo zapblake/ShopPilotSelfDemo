@@ -451,6 +451,7 @@ export function injectWidget(html: string, options: InjectionOptions): string {
     state = 'greeting';
     messageCount = 0;
     ctaShown = false;
+    conversationHistory = [];
   });
 
   // --- Chips ---
