@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
+}
+
 // Lazy init — avoids build-time crash when env var isn't available during static analysis
 let _openai: OpenAI | null = null;
 function getOpenAI() {
@@ -68,12 +78,12 @@ GROUND RULES:
 
     const reply = completion.choices[0]?.message?.content || "I'd love to help! What are you looking for today?";
 
-    return NextResponse.json({ reply });
+    return NextResponse.json({ reply }, { headers: CORS_HEADERS });
   } catch (err) {
     console.error("Chat error:", err);
     return NextResponse.json(
       { reply: "I'm having a moment — could you try that again? 😅" },
-      { status: 200 } // always 200 so widget doesn't break
+      { status: 200, headers: CORS_HEADERS }
     );
   }
 }

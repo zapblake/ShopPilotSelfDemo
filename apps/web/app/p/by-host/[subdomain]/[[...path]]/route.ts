@@ -60,6 +60,11 @@ export async function GET(
   }
 
   return new NextResponse(html, {
-    headers: { "content-type": "text/html; charset=utf-8" },
+    headers: {
+      "content-type": "text/html; charset=utf-8",
+      // Override any CSP the store set — we need our widget + API calls to work
+      "content-security-policy": "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;",
+      "x-frame-options": "SAMEORIGIN",
+    },
   });
 }

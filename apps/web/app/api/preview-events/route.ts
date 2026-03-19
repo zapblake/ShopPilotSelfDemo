@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendTelegramNotification } from "@/lib/telegram";
 
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -66,7 +76,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       { success: true, data: { id: event.id } },
-      { status: 201 }
+      { status: 201, headers: CORS_HEADERS }
     );
   } catch {
     return NextResponse.json(
