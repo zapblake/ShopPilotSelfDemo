@@ -60,23 +60,48 @@ interface JobData {
   lastEvent: { eventName: string; createdAt: string } | null;
 }
 
-const STEPS = ["QUEUED", "CRAWLING", "CLASSIFYING", "READY_FOR_RENDER", "RENDERING", "RENDER_COMPLETE", "PREVIEW_READY"] as const;
-
-const STATUS_COLORS: Record<string, string> = {
-  PENDING: "bg-gray-200 text-gray-700",
-  QUEUED: "bg-gray-200 text-gray-700",
-  CRAWLING: "bg-blue-100 text-blue-700",
-  CLASSIFYING: "bg-yellow-100 text-yellow-700",
-  READY_FOR_RENDER: "bg-green-100 text-green-700",
-  RENDERING: "bg-purple-100 text-purple-700",
-  RENDER_COMPLETE: "bg-green-100 text-green-700",
-  PREVIEW_READY: "bg-emerald-100 text-emerald-700",
-  READY: "bg-green-100 text-green-700",
-  FAILED: "bg-red-100 text-red-700",
-  EXPIRED: "bg-gray-200 text-gray-500",
-};
-
 const TERMINAL_STATUSES = new Set(["RENDER_COMPLETE", "PREVIEW_READY", "READY", "FAILED", "EXPIRED"]);
+
+const VISUAL_STEPS = [
+  { label: "Received", statuses: ["QUEUED"] },
+  { label: "Scanning", statuses: ["CRAWLING"] },
+  { label: "Analyzing", statuses: ["CLASSIFYING", "READY_FOR_RENDER"] },
+  { label: "Building", statuses: ["RENDERING", "RENDER_COMPLETE"] },
+  { label: "Ready", statuses: ["PREVIEW_READY", "READY"] },
+];
+
+function getVisualStepIndex(status: string): number {
+  for (let i = 0; i < VISUAL_STEPS.length; i++) {
+    if (VISUAL_STEPS[i].statuses.includes(status)) return i;
+  }
+  return -1;
+}
+
+function getStatusMessage(status: string): string {
+  switch (status) {
+    case "QUEUED": return "Getting your store ready…";
+    case "CRAWLING": return "Scanning your catalog pages…";
+    case "CLASSIFYING": return "Analyzing your products…";
+    case "READY_FOR_RENDER":
+    case "RENDERING": return "Building your preview…";
+    case "RENDER_COMPLETE": return "Building your preview…";
+    case "PREVIEW_READY":
+    case "READY": return "Your preview is ready! 🎉";
+    case "FAILED": return "Something went wrong. We\u2019ll look into it.";
+    default: return "Processing…";
+  }
+}
+
+const pulseKeyframes = `
+@keyframes pulse-orange {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,107,53,0.5); }
+  50% { box-shadow: 0 0 0 10px rgba(255,107,53,0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+`;
 
 export function JobStatusView({ jobId }: { jobId: string }) {
   const [job, setJob] = useState<JobData | null>(null);
@@ -110,328 +135,192 @@ export function JobStatusView({ jobId }: { jobId: string }) {
     return () => { active = false; };
   }, [jobId]);
 
+  const card = {
+    background: "rgba(255,255,255,0.04)",
+    border: "1px solid rgba(255,255,255,0.08)",
+    borderRadius: "20px",
+    padding: "48px 40px",
+    maxWidth: "560px",
+    width: "100%",
+  } as const;
+
   if (error) {
     return (
-      <div className="rounded-lg bg-red-50 p-6 text-center text-red-700">
-        {error}
+      <div style={{ ...card, textAlign: "center", color: "#ff6b6b" }}>
+        <style>{pulseKeyframes}</style>
+        <p style={{ fontSize: "16px" }}>{error}</p>
       </div>
     );
   }
 
   if (!job) {
     return (
-      <div className="text-center text-gray-500">Loading job status...</div>
+      <div style={{ ...card, textAlign: "center", color: "rgba(255,255,255,0.4)" }}>
+        <style>{pulseKeyframes}</style>
+        <p style={{ fontSize: "16px" }}>Loading job status…</p>
+      </div>
     );
   }
 
-  const currentStep = STEPS.indexOf(job.status as typeof STEPS[number]);
+  const currentStep = getVisualStepIndex(job.status);
+  const isFailed = job.status === "FAILED";
+  const isReady = job.status === "PREVIEW_READY" || job.status === "READY";
+  const storeName = job.widgetConfig?.storeName || job.normalizedDomain;
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold">Preview Job</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          ID: <code className="rounded bg-gray-100 px-1.5 py-0.5">{job.id}</code>
-        </p>
-      </div>
+    <div style={{ ...card, animation: "fade-in 0.4s ease-out" }}>
+      <style>{pulseKeyframes}</style>
 
-      {/* Status badge */}
-      <div className="flex items-center gap-3">
-        <span className={`inline-block rounded-full px-3 py-1 text-sm font-medium ${STATUS_COLORS[job.status] ?? "bg-gray-100"}`}>
-          {job.status}
-        </span>
-        <span className="text-sm text-gray-500">
-          {job.normalizedDomain}
-        </span>
-      </div>
-
-      {/* Progress steps */}
-      <div className="flex items-center gap-2">
-        {STEPS.map((step, i) => (
-          <div key={step} className="flex items-center gap-2">
-            <div
-              className={`flex h-8 items-center rounded-full px-3 text-xs font-medium ${
-                i <= currentStep
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 text-gray-500"
-              } ${job.status === "FAILED" && i <= currentStep ? "bg-red-500 text-white" : ""}`}
-            >
-              {step}
-            </div>
-            {i < STEPS.length - 1 && (
-              <div className={`h-0.5 w-6 ${i < currentStep ? "bg-blue-600" : "bg-gray-200"}`} />
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Timestamps */}
-      <div className="grid grid-cols-2 gap-4 text-sm">
-        <div>
-          <span className="text-gray-500">Created:</span>{" "}
-          {new Date(job.createdAt).toLocaleString()}
-        </div>
-        {job.completedAt && (
-          <div>
-            <span className="text-gray-500">Completed:</span>{" "}
-            {new Date(job.completedAt).toLocaleString()}
-          </div>
-        )}
-        <div>
-          <span className="text-gray-500">URL:</span>{" "}
-          {job.submittedUrl}
+      {/* Logo */}
+      <div style={{ textAlign: "center", marginBottom: "32px" }}>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: "10px" }}>
+          <span style={{ fontSize: "28px" }}>⚡</span>
+          <span style={{
+            fontSize: "22px",
+            fontWeight: 700,
+            background: "linear-gradient(135deg,#ff6b35,#f7931e)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            letterSpacing: "-0.02em",
+          }}>ZapSight</span>
         </div>
       </div>
 
-      {/* Error */}
-      {job.status === "FAILED" && (
-        <div className="rounded-lg bg-red-50 p-4">
-          <p className="font-medium text-red-700">Job Failed</p>
-          <p className="mt-1 text-sm text-red-600">
-            {job.errorMessage ?? "Unknown error"}
-            {job.errorCode && (
-              <span className="ml-2 text-red-400">({job.errorCode})</span>
-            )}
-          </p>
-        </div>
-      )}
+      {/* Store name badge */}
+      <div style={{ textAlign: "center", marginBottom: "36px" }}>
+        <span style={{
+          display: "inline-block",
+          background: "linear-gradient(135deg,#ff6b35,#f7931e)",
+          color: "#fff",
+          fontSize: "13px",
+          fontWeight: 600,
+          padding: "6px 16px",
+          borderRadius: "20px",
+          letterSpacing: "0.02em",
+        }}>{storeName}</span>
+      </div>
 
-      {/* Preview section */}
-      {(job.status === "PREVIEW_READY" || job.status === "READY") && (
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-          <h2 className="font-semibold text-emerald-800">Preview Available</h2>
-          <div className="mt-2">
-            <a
-              href={`/p/${job.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
-            >
-              Open Preview
-              <span className="text-xs">&rarr;</span>
-            </a>
-          </div>
-          {job.renderedPages && job.renderedPages.length > 0 && (
-            <div className="mt-3 space-y-1">
-              <p className="text-xs font-medium text-emerald-700">Preview Pages:</p>
-              {job.renderedPages
-                .filter((rp) => rp.renderStatus === "DONE")
-                .map((rp) => (
-                  <div key={rp.id} className="flex items-center gap-2 text-sm">
-                    <code className="rounded bg-emerald-100 px-1.5 py-0.5 text-xs text-emerald-800">
-                      {rp.previewPath || "/"}
-                    </code>
-                    <a
-                      href={`/p/${job.id}${rp.previewPath === "/" ? "" : rp.previewPath}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-emerald-600 hover:underline text-xs"
-                    >
-                      Open
-                    </a>
-                  </div>
-                ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Widget config & events */}
-      {(job.widgetConfig || job.eventCount > 0) && (
-        <div className="rounded-lg border bg-white p-4">
-          <h2 className="font-semibold">Widget</h2>
-          <div className="mt-3 space-y-3">
-            {job.widgetConfig && (
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-500">Store Name:</span>{" "}
-                  {job.widgetConfig.storeName ?? "—"}
+      {/* Progress stepper */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0", marginBottom: "32px" }}>
+        {VISUAL_STEPS.map((step, i) => {
+          const isDone = !isFailed && currentStep > i;
+          const isCurrent = !isFailed && currentStep === i;
+          return (
+            <div key={step.label} style={{ display: "flex", alignItems: "center" }}>
+              {/* Step circle + label */}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "64px" }}>
+                <div style={{
+                  width: "32px",
+                  height: "32px",
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  transition: "all 0.3s ease",
+                  ...(isDone ? {
+                    background: "linear-gradient(135deg,#22c55e,#16a34a)",
+                    color: "#fff",
+                  } : isCurrent ? {
+                    background: "linear-gradient(135deg,#ff6b35,#f7931e)",
+                    color: "#fff",
+                    animation: "pulse-orange 2s ease-in-out infinite",
+                  } : {
+                    background: "rgba(255,255,255,0.06)",
+                    color: "rgba(255,255,255,0.2)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                  }),
+                }}>
+                  {isDone ? "✓" : isCurrent ? "●" : "○"}
                 </div>
-                <div>
-                  <span className="text-gray-500">Mode:</span>{" "}
-                  {job.widgetConfig.mode}
-                </div>
-                {job.widgetConfig.promptContext && (
-                  <div className="col-span-2">
-                    <span className="text-gray-500">Prompt Context:</span>
-                    <p className="mt-1 rounded bg-gray-50 p-2 text-xs text-gray-600">
-                      {job.widgetConfig.promptContext.length > 200
-                        ? job.widgetConfig.promptContext.slice(0, 200) + "..."
-                        : job.widgetConfig.promptContext}
-                    </p>
-                  </div>
-                )}
+                <span style={{
+                  fontSize: "10px",
+                  fontWeight: 500,
+                  marginTop: "6px",
+                  color: isDone ? "#22c55e" : isCurrent ? "#ff6b35" : "rgba(255,255,255,0.25)",
+                  letterSpacing: "0.03em",
+                  textTransform: "uppercase" as const,
+                }}>{step.label}</span>
               </div>
-            )}
-            <div className="flex items-center gap-4 text-sm">
-              <div>
-                <span className="text-gray-500">Events:</span>{" "}
-                <span className="font-medium">{job.eventCount}</span>
-              </div>
-              {job.lastEvent && (
-                <div>
-                  <span className="text-gray-500">Last:</span>{" "}
-                  <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs">
-                    {job.lastEvent.eventName}
-                  </span>{" "}
-                  <span className="text-xs text-gray-400">
-                    {new Date(job.lastEvent.createdAt).toLocaleString()}
-                  </span>
-                </div>
+
+              {/* Connector line */}
+              {i < VISUAL_STEPS.length - 1 && (
+                <div style={{
+                  width: "24px",
+                  height: "2px",
+                  marginBottom: "18px",
+                  background: isDone ? "linear-gradient(90deg,#22c55e,#16a34a)" : "rgba(255,255,255,0.08)",
+                  borderRadius: "1px",
+                  transition: "background 0.3s ease",
+                }} />
               )}
             </div>
-            <div className="text-xs">
-              <a
-                href={`/api/preview/${job.id}/config`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:underline"
-              >
-                View widget config JSON
-              </a>
-            </div>
-          </div>
+          );
+        })}
+      </div>
+
+      {/* Status message */}
+      <div style={{ textAlign: "center", marginBottom: "32px" }}>
+        <p style={{
+          fontSize: "18px",
+          fontWeight: 500,
+          color: isFailed ? "#ff6b6b" : isReady ? "#22c55e" : "rgba(255,255,255,0.7)",
+          lineHeight: 1.5,
+        }}>
+          {getStatusMessage(job.status)}
+        </p>
+        {isFailed && job.errorMessage && (
+          <p style={{ fontSize: "13px", color: "rgba(255,107,107,0.6)", marginTop: "8px" }}>
+            {job.errorMessage}
+          </p>
+        )}
+      </div>
+
+      {/* CTA button when ready */}
+      {isReady && (
+        <div style={{ textAlign: "center", marginBottom: "24px" }}>
+          <a
+            href={`https://${job.normalizedDomain}.zapsight.us`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: "inline-block",
+              background: "linear-gradient(135deg,#ff6b35,#f7931e)",
+              color: "#fff",
+              fontSize: "16px",
+              fontWeight: 600,
+              padding: "14px 32px",
+              borderRadius: "12px",
+              textDecoration: "none",
+              letterSpacing: "0.01em",
+              transition: "transform 0.15s ease, box-shadow 0.15s ease",
+              boxShadow: "0 4px 20px rgba(255,107,53,0.3)",
+            }}
+          >
+            View Your Preview →
+          </a>
         </div>
       )}
 
-      {/* Crawl summary */}
-      {job.crawlRun && (
-        <div className="rounded-lg border bg-white p-4">
-          <h2 className="font-semibold">Crawl Run</h2>
-          <div className="mt-2 grid grid-cols-3 gap-4 text-sm">
-            <div>
-              <span className="text-gray-500">Status:</span> {job.crawlRun.status}
-            </div>
-            <div>
-              <span className="text-gray-500">Pages:</span> {job.crawlRun.pageCount}
-            </div>
-            {job.crawlRun.finishedAt && (
-              <div>
-                <span className="text-gray-500">Finished:</span>{" "}
-                {new Date(job.crawlRun.finishedAt).toLocaleString()}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Selected pages */}
-      {job.selectedPages.length > 0 && (
-        <div className="rounded-lg border bg-white p-4">
-          <h2 className="font-semibold">Selected Pages</h2>
-          <div className="mt-2 space-y-2">
-            {job.selectedPages.map((p) => (
-              <div key={p.id} className="flex items-center gap-2 text-sm">
-                <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
-                  {p.pageType}
-                </span>
-                <span className="text-gray-700">{p.title ?? p.url}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Rendered pages */}
-      {job.renderedPages && job.renderedPages.length > 0 && (
-        <div className="rounded-lg border bg-white p-4">
-          <h2 className="font-semibold">Rendered Pages</h2>
-          <div className="mt-3 space-y-3">
-            {job.renderedPages.map((rp) => (
-              <div key={rp.id} className="rounded border p-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-                        rp.renderStatus === "DONE"
-                          ? "bg-green-100 text-green-700"
-                          : rp.renderStatus === "RENDERING"
-                          ? "bg-purple-100 text-purple-700"
-                          : rp.renderStatus === "FAILED"
-                          ? "bg-red-100 text-red-700"
-                          : "bg-gray-100 text-gray-600"
-                      }`}
-                    >
-                      {rp.renderStatus}
-                    </span>
-                    <span className="text-sm text-gray-700 truncate max-w-md" title={rp.sourceUrl}>
-                      {rp.sourceUrl}
-                    </span>
-                  </div>
-                  {rp.renderDurationMs != null && (
-                    <span className="text-xs text-gray-400">{rp.renderDurationMs}ms</span>
-                  )}
-                </div>
-                {rp.extractedJson && (
-                  <div className="mt-1 text-sm text-gray-500">
-                    {rp.extractedJson.title && (
-                      <span className="font-medium text-gray-700">{rp.extractedJson.title}</span>
-                    )}
-                    {rp.extractedJson.metaDescription && (
-                      <span className="ml-2 text-gray-400">— {rp.extractedJson.metaDescription}</span>
-                    )}
-                  </div>
-                )}
-                {rp.screenshotBlobKey && (
-                  <div className="mt-2 flex h-8 w-32 items-center justify-center rounded bg-gray-100 text-xs text-gray-500">
-                    Screenshot captured
-                  </div>
-                )}
-                {rp.renderStatus === "FAILED" && rp.errorMessage && (
-                  <p className="mt-1 text-xs text-red-500">{rp.errorMessage}</p>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Discovered pages table */}
-      {job.discoveredPages.length > 0 && (
-        <div className="rounded-lg border bg-white p-4">
-          <h2 className="font-semibold">Discovered Pages</h2>
-          <div className="mt-3 overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b text-gray-500">
-                <tr>
-                  <th className="pb-2 pr-4">URL</th>
-                  <th className="pb-2 pr-4">Type</th>
-                  <th className="pb-2 pr-4">Score</th>
-                  <th className="pb-2">Selected</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {job.discoveredPages.map((p) => (
-                  <tr key={p.id}>
-                    <td className="py-2 pr-4">
-                      <div className="max-w-xs truncate" title={p.url}>
-                        {p.normalizedUrl}
-                      </div>
-                      {p.title && (
-                        <div className="text-xs text-gray-400">{p.title}</div>
-                      )}
-                    </td>
-                    <td className="py-2 pr-4">
-                      <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs">
-                        {p.pageType ?? "—"}
-                      </span>
-                    </td>
-                    <td className="py-2 pr-4">{p.score?.toFixed(2) ?? "—"}</td>
-                    <td className="py-2">
-                      {p.selected ? (
-                        <span className="text-green-600">&#10003;</span>
-                      ) : (
-                        <span className="text-gray-300">—</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+      {/* Calendly link */}
+      <div style={{ textAlign: "center" }}>
+        <a
+          href="https://calendly.com/blake-zapsight/30min"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            fontSize: "13px",
+            color: "rgba(255,255,255,0.3)",
+            textDecoration: "none",
+            borderBottom: "1px solid rgba(255,255,255,0.1)",
+            paddingBottom: "1px",
+            transition: "color 0.2s ease",
+          }}
+        >
+          Prefer a live demo? Book 15 minutes →
+        </a>
+      </div>
     </div>
   );
 }
