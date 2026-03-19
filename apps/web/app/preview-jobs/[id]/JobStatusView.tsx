@@ -87,7 +87,7 @@ function getStatusMessage(status: string): string {
     case "RENDER_COMPLETE": return "Building your preview…";
     case "PREVIEW_READY":
     case "READY": return "Your preview is ready! 🎉";
-    case "FAILED": return "Something went wrong. We\u2019ll look into it.";
+    case "FAILED": return "Something went wrong. We'll look into it.";
     default: return "Processing…";
   }
 }
@@ -163,8 +163,10 @@ export function JobStatusView({ jobId }: { jobId: string }) {
   }
 
   const currentStep = getVisualStepIndex(job.status);
-  const isFailed = job.status === "FAILED";
-  const isReady = job.status === "PREVIEW_READY" || job.status === "READY";
+  const jobReady = job.status === "PREVIEW_READY" || job.status === "READY";
+  const allRendersFailed = jobReady && job.renderedPages.length > 0 && job.renderedPages.every(p => p.renderStatus === "FAILED");
+  const isFailed = job.status === "FAILED" || allRendersFailed;
+  const isReady = jobReady && !allRendersFailed;
   const storeName = job.widgetConfig?.storeName || job.normalizedDomain;
 
   return (
@@ -270,9 +272,11 @@ export function JobStatusView({ jobId }: { jobId: string }) {
         }}>
           {getStatusMessage(job.status)}
         </p>
-        {isFailed && job.errorMessage && (
+        {isFailed && (
           <p style={{ fontSize: "13px", color: "rgba(255,107,107,0.6)", marginTop: "8px" }}>
-            {job.errorMessage}
+            {allRendersFailed
+              ? "We had trouble rendering this store's pages. Try a different URL or book a live demo."
+              : job.errorMessage || "Please try again or book a live demo below."}
           </p>
         )}
       </div>
@@ -281,7 +285,7 @@ export function JobStatusView({ jobId }: { jobId: string }) {
       {isReady && (
         <div style={{ textAlign: "center", marginBottom: "24px" }}>
           <a
-            href={`https://${job.normalizedDomain.replace(/\.(com|net|org|io|co)$/, "").replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "").slice(0, 40)}.zapsight.us`}
+            href={`/p/${job.id}`}
             target="_blank"
             rel="noopener noreferrer"
             style={{
