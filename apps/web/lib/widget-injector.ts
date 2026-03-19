@@ -506,11 +506,15 @@ export function injectWidget(html: string, options: InjectionOptions): string {
     .then(function(r) { return r.json(); })
     .then(function(data) {
       var reply = data.reply || 'Happy to help! What are you looking for?';
+      var products = data.products || [];
       var typing = document.getElementById(typingId);
       if (typing) typing.remove();
       conversationHistory.push({ role: 'user', content: text });
       conversationHistory.push({ role: 'assistant', content: reply });
       appendMessage(reply, 'bot');
+      if (products.length > 0) {
+        appendProductCards(products);
+      }
       if (messageCount === 2 && !ctaShown) {
         ctaShown = true;
         appendCTA();
@@ -527,6 +531,55 @@ export function injectWidget(html: string, options: InjectionOptions): string {
   document.getElementById('zs-input').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') sendMessage();
   });
+
+  // Demo product images — royalty-free placeholder furniture/mattress shots
+  var demoImages = [
+    'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=300&h=200&fit=crop',
+    'https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?w=300&h=200&fit=crop',
+    'https://images.unsplash.com/photo-1616594039964-ae9021a400a0?w=300&h=200&fit=crop',
+    'https://images.unsplash.com/photo-1631679706909-1844bbd07221?w=300&h=200&fit=crop',
+    'https://images.unsplash.com/photo-1540574163026-643ea20ade25?w=300&h=200&fit=crop',
+    'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=300&h=200&fit=crop',
+  ];
+
+  function appendProductCards(products) {
+    var msgs = document.getElementById('zs-messages');
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;flex-direction:column;gap:10px;margin-top:4px;width:100%;';
+
+    products.slice(0, 3).forEach(function(p, i) {
+      var imgUrl = demoImages[i % demoImages.length];
+      var card = document.createElement('div');
+      card.style.cssText = 'background:#1e1a2e;border:1px solid rgba(255,255,255,0.08);border-radius:12px;overflow:hidden;cursor:pointer;transition:border-color 0.2s;';
+      card.onmouseenter = function() { card.style.borderColor = 'rgba(139,92,246,0.5)'; };
+      card.onmouseleave = function() { card.style.borderColor = 'rgba(255,255,255,0.08)'; };
+
+      // Demo badge
+      var badge = '<div style="position:absolute;top:8px;left:8px;background:rgba(139,92,246,0.85);color:white;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;letter-spacing:0.5px;">DEMO</div>';
+
+      // Price — generate a plausible one
+      var price = (Math.floor(Math.random() * 160) * 5 + 199).toFixed(2);
+
+      card.innerHTML =
+        '<div style="position:relative;">' +
+          '<img src="' + imgUrl + '" style="width:100%;height:140px;object-fit:cover;display:block;" />' +
+          badge +
+        '</div>' +
+        '<div style="padding:12px;">' +
+          '<div style="color:white;font-size:13px;font-weight:600;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="' + escapeHtml(p.title) + '">' + escapeHtml(p.title) + '</div>' +
+          (p.reason ? '<div style="color:rgba(255,255,255,0.5);font-size:11px;margin-bottom:8px;">' + escapeHtml(p.reason) + '</div>' : '') +
+          '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+            '<span style="color:#a78bfa;font-size:15px;font-weight:700;">$' + price + '</span>' +
+            '<button onclick="(function(btn){btn.textContent=\\'Added! ✓\\';btn.style.background=\\'#16a34a\\';setTimeout(function(){btn.textContent=\\'Add to Cart\\';btn.style.background=\\'#7c3aed\\';},1500);})(this)" style="all:unset;background:#7c3aed;color:white;font-size:12px;font-weight:600;padding:6px 14px;border-radius:8px;cursor:pointer;white-space:nowrap;">Add to Cart</button>' +
+          '</div>' +
+        '</div>';
+
+      wrap.appendChild(card);
+    });
+
+    msgs.appendChild(wrap);
+    msgs.scrollTop = msgs.scrollHeight;
+  }
 
   function appendCTA() {
     var msgs = document.getElementById('zs-messages');

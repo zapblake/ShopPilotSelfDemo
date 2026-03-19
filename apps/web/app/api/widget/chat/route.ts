@@ -89,7 +89,13 @@ Then smoothly continue helping. Don't dwell on the pitch. One plant, then back t
 - If asked about pricing or specific stock, say you can help narrow down the right category and suggest they reach out to the team for exact availability.
 
 ═══ IF THEY ASK ABOUT ZAPSIGHT ═══
-Be honest and enthusiastic: "Yep — I'm Shop Pilot, built by ZapSight. This is a preview of what I'd do on your real site with your actual inventory. Want to see what a full setup looks like? Happy to connect you with the team." Then offer the Calendly link: https://calendly.com/blake-zapsight/30min`;
+Be honest and enthusiastic: "Yep — I'm Shop Pilot, built by ZapSight. This is a preview of what I'd do on your real site with your actual inventory. Want to see what a full setup looks like? Happy to connect you with the team." Then offer the Calendly link: https://calendly.com/blake-zapsight/30min
+
+═══ SHOWING PRODUCT CARDS ═══
+When the user asks to see products, options, or recommendations — show 2-3 cards using the <products> block.
+Use products from the catalog above when available. Make up plausible product names if catalog is empty.
+Only show cards when genuinely useful (recommendations, "show me options", "what do you have"). Not every turn.
+Keep your text reply short when showing cards — let the cards do the talking.`;
 }
 
 export async function POST(req: NextRequest) {
@@ -98,8 +104,18 @@ export async function POST(req: NextRequest) {
 
     const systemPrompt = buildSystemPrompt(storeContext || {}, pageContext || {});
 
-    const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-      { role: "system", content: systemPrompt },
+    // Build product catalog snippet for the AI to reference
+    const sampleProducts = (storeContext?.sampleProducts as Array<{ title: string; url: string }>) || [];
+
+    const productCatalog = sampleProducts.length
+      ? `\n\n═══ AVAILABLE PRODUCTS (use these when showing cards) ═══\n` +
+        sampleProducts.map((p, i) => `${i + 1}. "${p.title}" — ${p.url}`).join("\n") +
+        `\n\nWhen you want to show product cards, end your response with a JSON block EXACTLY like this (no prose after it):\n<products>\n[{"title":"Product Name","url":"https://...","reason":"Why it fits"}]\n</products>`
+      : "";
+
+    // Inject catalog into system prompt
+    const enrichedMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+      { role: "system", content: systemPrompt + productCatalog },
       ...(history || []).map((m: { role: string; content: string }) => ({
         role: m.role as "user" | "assistant",
         content: m.content,
@@ -109,16 +125,27 @@ export async function POST(req: NextRequest) {
 
     const completion = await getOpenAI().chat.completions.create({
       model: "gpt-4o-mini",
-      messages,
-      max_tokens: 220,
+      messages: enrichedMessages,
+      max_tokens: 400,
       temperature: 0.75,
     });
 
-    const reply =
-      completion.choices[0]?.message?.content ||
-      "Happy to help! What are you looking for today?";
+    const raw = completion.choices[0]?.message?.content || "Happy to help! What are you looking for today?";
 
-    return NextResponse.json({ reply }, { headers: CORS_HEADERS });
+    // Parse optional product cards out of the response
+    const productMatch = raw.match(/<products>([\s\S]*?)<\/products>/);
+    let products: Array<{ title: string; url: string; reason?: string }> = [];
+    let reply = raw.replace(/<products>[\s\S]*?<\/products>/, "").trim();
+
+    if (productMatch) {
+      try {
+        products = JSON.parse(productMatch[1].trim());
+      } catch {
+        // malformed JSON — just skip products
+      }
+    }
+
+    return NextResponse.json({ reply, products }, { headers: CORS_HEADERS });
   } catch (err) {
     console.error("Chat error:", err);
     return NextResponse.json(
