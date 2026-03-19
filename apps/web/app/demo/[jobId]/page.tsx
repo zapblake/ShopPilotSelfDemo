@@ -285,7 +285,7 @@ export default async function DemoPage({ params }: DemoPageProps) {
       color:white; font-weight:700; font-size:12px; padding:7px 16px;
       border-radius:20px; text-decoration:none; white-space:nowrap;
     ">Book a Custom Demo →</a>
-    <button onclick="document.getElementById('zs-notice').style.display='none';document.body.style.paddingTop='0'" style="all:unset;color:rgba(255,255,255,0.35);cursor:pointer;font-size:18px;padding:0 4px;line-height:1;">×</button>
+    <span onclick="document.getElementById('zs-notice').style.display='none';document.body.style.paddingTop='0'" style="color:rgba(255,255,255,0.35);cursor:pointer;font-size:20px;padding:0 6px;line-height:1;user-select:none;">×</span>
   </span>
 </div>
 <script>document.body.style.paddingTop='53px';</script>`;

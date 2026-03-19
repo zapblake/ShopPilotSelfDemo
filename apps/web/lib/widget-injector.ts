@@ -343,7 +343,40 @@ export function injectWidget(html: string, options: InjectionOptions): string {
   if (!config) return;
 
   var storeName = config.storeContext ? config.storeContext.storeName : 'this store';
-  var productType = (config.storeContext && config.storeContext.productType) ? config.storeContext.productType : 'product';
+  var productTypes = (config.storeContext && config.storeContext.productTypes && config.storeContext.productTypes.length)
+    ? config.storeContext.productTypes
+    : null;
+  var productType = productTypes ? productTypes[0] : ((config.storeContext && config.storeContext.productType) ? config.storeContext.productType : 'product');
+
+  // Build context-aware chip prompts from productTypes
+  var chipSets = {
+    furniture: [
+      { icon: '\\uD83D\\uDECB\\uFE0F', text: 'Help me find a sofa' },
+      { icon: '\\uD83D\\uDECF\\uFE0F', text: 'Show me bedroom furniture' },
+      { icon: '\\uD83D\\uDCB0', text: 'What\\u0027s on sale right now?' },
+    ],
+    mattress: [
+      { icon: '\\uD83D\\uDECF\\uFE0F', text: 'Help me find the perfect mattress' },
+      { icon: '\\u2744\\uFE0F', text: 'Show me cooling mattresses' },
+      { icon: '\\uD83D\\uDCB0', text: 'What\\u0027s on sale right now?' },
+    ],
+    default: [
+      { icon: '\\uD83D\\uDD0D', text: 'Help me find the right product' },
+      { icon: '\\uD83D\\uDCB0', text: 'What\\u0027s on sale right now?' },
+      { icon: '\\u2B50', text: 'Show me your best sellers' },
+    ],
+  };
+  function getChips() {
+    if (!productTypes) return chipSets.default;
+    var joined = productTypes.join(' ').toLowerCase();
+    if (joined.includes('sofa') || joined.includes('furniture') || joined.includes('chair') || joined.includes('dining') || joined.includes('bedroom')) return chipSets.furniture;
+    if (joined.includes('mattress') || joined.includes('sleep') || joined.includes('bed')) return chipSets.mattress;
+    return chipSets.default;
+  }
+  var chips = getChips();
+  var chipsHtml = chips.map(function(c) {
+    return '<button class="zs-chip" data-text="' + c.text + '"><span class="zs-chip-icon">' + c.icon + '</span> ' + c.text + '</button>';
+  }).join('');
   var domain = config.normalizedDomain || '';
   var state = 'greeting'; // 'greeting' or 'conversation'
   var messageCount = 0;
@@ -378,9 +411,7 @@ export function injectWidget(html: string, options: InjectionOptions): string {
     '<div class="zs-suggestions" id="zs-suggestions">' +
       '<div class="zs-suggestions-label">\\u2728 Try asking</div>' +
       '<div class="zs-suggestions-grid">' +
-        '<button class="zs-chip" data-text="Help me find the perfect mattress"><span class="zs-chip-icon">\\uD83D\\uDECF\\uFE0F</span> Help me find the perfect mattress</button>' +
-        '<button class="zs-chip" data-text="Show me cooling mattresses"><span class="zs-chip-icon">\\u2744\\uFE0F</span> Show me cooling mattresses</button>' +
-        '<button class="zs-chip" data-text="What\\u0027s on sale right now?"><span class="zs-chip-icon">\\uD83D\\uDCB0</span> What\\u0027s on sale right now?</button>' +
+        chipsHtml +
       '</div>' +
     '</div>' +
     '<div class="zs-input-row">' +
@@ -534,7 +565,7 @@ export function injectWidget(html: string, options: InjectionOptions): string {
       '</span>' +
       '<span style="display:flex;align-items:center;gap:10px;flex-shrink:0;">' +
         '<a href="https://calendly.com/blake-zapsight/30min" target="_blank" style="display:inline-block;background:linear-gradient(135deg,#ff6b35,#ff3d7f);color:white;font-weight:700;font-size:12px;padding:7px 16px;border-radius:20px;text-decoration:none;white-space:nowrap;">Book a Custom Demo →</a>' +
-        '<button id="zs-notice-close" style="all:unset;color:rgba(255,255,255,0.35);cursor:pointer;font-size:18px;padding:0 4px;line-height:1;">×</button>' +
+        '<span id="zs-notice-close" style="color:rgba(255,255,255,0.35);cursor:pointer;font-size:20px;padding:0 6px;line-height:1;user-select:none;">×</span>' +
       '</span>';
     document.body.prepend(notice);
     document.body.style.paddingTop = '53px';
