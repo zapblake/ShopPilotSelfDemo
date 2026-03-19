@@ -7,7 +7,7 @@
   "scripts": {
     "build": "echo skip",
     "dev": "tsc --watch",
-    "start": "node src/run-worker.js"
+    "start": "node src/worker.js"
   },
   "dependencies": {
     "@prisma/client": "^6.1.0",
