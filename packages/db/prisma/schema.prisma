@@ -60,6 +60,7 @@ model RenderedPage {
   sourceUrl         String
   previewPath       String
   htmlBlobKey       String?
+  htmlContent       String?
   screenshotBlobKey String?
   extractedJson     Json?
   renderStatus      RenderStatus @default(PENDING)

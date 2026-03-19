@@ -11,7 +11,8 @@ export interface PageResult {
 
 /**
  * Given a previewJobId and a preview path, find the matching RenderedPage
- * from DB, then load its HTML from storage.
+ * from DB, then load its HTML — first from DB column (htmlContent), then
+ * falling back to blob storage.
  *
  * Path matching: try exact match on previewPath first, then fallback to homepage ("/").
  */
@@ -24,13 +25,13 @@ export async function getRenderedPageForPath(
   const normalizedPath = path === "" ? "/" : path;
 
   // Try exact match
-  let page = await prisma.renderedPage.findFirst({
+  let page = await (prisma.renderedPage as any).findFirst({
     where: {
       previewJobId,
       previewPath: normalizedPath,
       renderStatus: "DONE",
     },
-  });
+  }) as (RenderedPage & { htmlContent?: string | null }) | null;
 
   // Fallback: try homepage
   if (!page && normalizedPath !== "/") {
@@ -38,17 +39,29 @@ export async function getRenderedPageForPath(
       { previewJobId, requestedPath: normalizedPath },
       "Exact path not found, falling back to homepage"
     );
-    page = await prisma.renderedPage.findFirst({
+    page = await (prisma.renderedPage as any).findFirst({
       where: {
         previewJobId,
         previewPath: "/",
         renderStatus: "DONE",
       },
-    });
+    }) as (RenderedPage & { htmlContent?: string | null }) | null;
   }
 
-  if (!page || !page.htmlBlobKey) {
+  if (!page) {
     logger.warn({ previewJobId, path: normalizedPath }, "No rendered page found");
+    return null;
+  }
+
+  // 1. Try in-DB HTML first (works cross-environment without shared storage)
+  if (page.htmlContent) {
+    logger.info({ previewJobId, path: normalizedPath }, "Serving HTML from DB column");
+    return { page, html: page.htmlContent };
+  }
+
+  // 2. Fall back to blob storage
+  if (!page.htmlBlobKey) {
+    logger.warn({ previewJobId, path: normalizedPath }, "No htmlContent or htmlBlobKey");
     return null;
   }
 

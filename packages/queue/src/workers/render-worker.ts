@@ -64,26 +64,33 @@ export function createRenderWorker() {
               pageType: renderedPage.previewPath,
             });
 
-            // Upload HTML to storage
+            // Upload HTML to storage (best-effort — may not be available cross-env)
             const htmlKey = `jobs/${previewJobId}/pages/${renderedPage.id}/index.html`;
-            await storage.upload(htmlKey, Buffer.from(result.html, "utf-8"), "text/html");
+            try {
+              await storage.upload(htmlKey, Buffer.from(result.html, "utf-8"), "text/html");
+            } catch (storageErr) {
+              logger.warn({ pageId: renderedPage.id }, "Storage upload failed (non-fatal), falling back to DB");
+            }
 
-            // Upload screenshot to storage
+            // Upload screenshot to storage (best-effort)
             const screenshotKey = `jobs/${previewJobId}/pages/${renderedPage.id}/screenshot.png`;
-            await storage.upload(screenshotKey, result.screenshotBuffer, "image/png");
+            try {
+              await storage.upload(screenshotKey, result.screenshotBuffer, "image/png");
+            } catch (_) { /* non-fatal */ }
 
-            // Update RenderedPage as DONE
+            // Update RenderedPage as DONE — store HTML directly in DB for cross-env access
             await prisma.renderedPage.update({
               where: { id: renderedPage.id },
               data: {
                 renderStatus: "DONE",
                 htmlBlobKey: htmlKey,
                 screenshotBlobKey: screenshotKey,
+                htmlContent: result.html,
                 extractedJson: JSON.parse(JSON.stringify(result.metadata)),
                 renderFinishedAt: new Date(),
                 renderDurationMs: result.durationMs,
               },
-            });
+            } as any);
 
             logger.info(
               { pageId: renderedPage.id, url: renderedPage.sourceUrl, durationMs: result.durationMs },
