@@ -9,15 +9,18 @@ echo "🚀 Building and deploying to demo.zapsight.us..."
 DEPLOY_URL=$(vercel deploy --yes 2>&1 | grep -Eo "https://web-[a-z0-9]+-blake-austins-projects\.vercel\.app" | tail -1)
 echo "✅ Preview deployed: $DEPLOY_URL"
 
-# Poll until deployment is ready (up to 3 min)
-echo "⏳ Waiting for deployment to be ready..."
+# Poll Vercel API until deployment state is READY (up to 3 min)
+DEPLOY_ID=$(echo "$DEPLOY_URL" | grep -Eo "web-[a-z0-9]+" | head -1)
+VERCEL_TOKEN=$(node -e "const fs=require('fs'); try { console.log(JSON.parse(fs.readFileSync(process.env.HOME+'/Library/Application Support/com.vercel.cli/auth.json','utf8')).token) } catch(e){}")
+echo "⏳ Waiting for deployment $DEPLOY_ID to be READY..."
 for i in $(seq 1 36); do
-  HTTP=$(curl -s -o /dev/null -w "%{http_code}" "$DEPLOY_URL")
-  if [ "$HTTP" = "200" ] || [ "$HTTP" = "308" ] || [ "$HTTP" = "307" ]; then
-    echo "✅ Deployment is live (HTTP $HTTP)"
+  STATE=$(curl -s "https://api.vercel.com/v13/deployments/$DEPLOY_URL" \
+    -H "Authorization: Bearer $VERCEL_TOKEN" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('readyState','unknown'))" 2>/dev/null)
+  if [ "$STATE" = "READY" ]; then
+    echo "✅ Deployment is READY"
     break
   fi
-  echo "   ... HTTP $HTTP, retry $i/36"
+  echo "   ... state=$STATE, retry $i/36"
   sleep 5
 done
 
