@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let _resend: Resend | null = null;
+function getResend() {
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY);
+  return _resend;
+}
 
 export async function POST(req: NextRequest) {
   // Simple shared secret so only our worker can call this
@@ -67,7 +71,7 @@ export async function POST(req: NextRequest) {
 </body>
 </html>`.trim();
 
-  const { error } = await resend.emails.send({
+  const { error } = await getResend().emails.send({
     from: "ZapSight Demo <demo@zapsight.us>",
     to,
     subject: `Your Shop Pilot demo for ${domain} is ready`,
