@@ -10,7 +10,7 @@ COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY packages/db/package.json ./packages/db/
 COPY packages/queue/package.json ./packages/queue/
 COPY packages/renderer/package.json ./packages/renderer/
-COPY packages/crawler/package.json ./packages/crawler/
+COPY packages/crawl/package.json ./packages/crawl/
 COPY packages/preview/package.json ./packages/preview/
 COPY packages/storage/package.json ./packages/storage/
 
