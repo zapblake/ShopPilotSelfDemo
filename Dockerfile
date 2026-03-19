@@ -23,8 +23,8 @@ COPY packages/ ./packages/
 # Generate Prisma client
 RUN pnpm --filter @zapsight/db exec prisma generate
 
-# Playwright browsers are already installed in the base image
-# but we need to ensure the right version is used
-ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=0
+# Use the browsers pre-installed in the base image (not a fresh download)
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 
 CMD ["pnpm", "--filter", "@zapsight/queue", "run", "start"]
