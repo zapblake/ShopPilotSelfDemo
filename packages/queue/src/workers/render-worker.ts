@@ -1,7 +1,7 @@
 import { Worker } from "bullmq";
 import { PrismaClient } from "@prisma/client";
 import pino from "pino";
-import { redis } from "../redis";
+import { bullmqConnection } from "../redis";
 import { MockRendererProvider, PlaywrightRendererProvider } from "@zapsight/renderer";
 import type { RendererProvider } from "@zapsight/renderer";
 import { getStorageAdapter } from "@zapsight/storage";
@@ -205,7 +205,7 @@ export function createRenderWorker() {
       }
     },
     {
-      connection: redis,
+      connection: bullmqConnection,
       concurrency: 3,
     }
   );

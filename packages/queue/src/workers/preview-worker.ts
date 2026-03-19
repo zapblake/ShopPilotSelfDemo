@@ -1,7 +1,7 @@
 import { Worker } from "bullmq";
 import { PrismaClient } from "@prisma/client";
 import pino from "pino";
-import { redis } from "../redis";
+import { bullmqConnection } from "../redis";
 import {
   MockCrawlProvider,
   classifyPages,
@@ -134,7 +134,7 @@ export function createPreviewWorker() {
         }
 
         // 12. Enqueue render job
-        await renderQueue.add("render-preview", { previewJobId });
+        await renderQueue.add("render-preview" as any, { previewJobId });
 
         logger.info({ previewJobId, renderPageCount: selectedPages.length }, "Preview job completed, render enqueued");
       } catch (err) {
@@ -155,7 +155,7 @@ export function createPreviewWorker() {
       }
     },
     {
-      connection: redis,
+      connection: bullmqConnection,
       concurrency: 5,
     }
   );

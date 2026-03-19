@@ -1,5 +1,5 @@
 import { Queue } from "bullmq";
-import { redis } from "../redis";
+import { bullmqConnection } from "../redis";
 
 export interface PreviewJobData {
   previewJobId: string;
@@ -8,7 +8,7 @@ export interface PreviewJobData {
 }
 
 export const previewQueue = new Queue<PreviewJobData>("preview-jobs", {
-  connection: redis,
+  connection: bullmqConnection,
   defaultJobOptions: {
     attempts: 3,
     backoff: {
