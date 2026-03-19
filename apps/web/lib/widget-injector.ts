@@ -16,39 +16,50 @@ export function injectWidget(html: string, options: InjectionOptions): string {
 </script>
 <script src="${apiBaseUrl}/api/widget/preview-bundle.js"></script>
 <style>
+  @keyframes zs-tab-pulse {
+    0%   { box-shadow: -2px 0 12px rgba(79,70,229,0.4), 0 0 0 0 rgba(79,70,229,0.5); }
+    70%  { box-shadow: -2px 0 12px rgba(79,70,229,0.4), 0 0 0 10px rgba(79,70,229,0); }
+    100% { box-shadow: -2px 0 12px rgba(79,70,229,0.4), 0 0 0 0 rgba(79,70,229,0); }
+  }
   #zapsight-widget-tab {
     position: fixed;
     right: 0;
     top: 50%;
     transform: translateY(-50%);
     z-index: 99999;
-    background: #1a1a2e;
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
     color: white;
     border: none;
-    border-radius: 8px 0 0 8px;
-    padding: 14px 6px;
+    border-radius: 12px 0 0 12px;
+    padding: 16px 8px;
     cursor: pointer;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
-    box-shadow: -2px 0 12px rgba(0,0,0,0.2);
-    transition: padding-right 0.2s;
+    gap: 8px;
+    box-shadow: -2px 0 12px rgba(79,70,229,0.4);
+    transition: transform 0.3s ease, opacity 0.3s ease, right 0.3s ease;
+    animation: zs-tab-pulse 2s ease-in-out 1s 3;
   }
   #zapsight-widget-tab:hover {
-    padding-right: 10px;
+    background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
+  }
+  #zapsight-widget-tab.hidden {
+    right: -80px;
+    opacity: 0;
+    pointer-events: none;
   }
   .zs-tab-icon {
-    font-size: 18px;
+    font-size: 20px;
   }
-  .zs-tab-caret {
+  .zs-tab-label {
     font-size: 10px;
-    opacity: 0.7;
-    writing-mode: vertical-rl;
-    letter-spacing: 1px;
-    font-family: sans-serif;
-    font-weight: 600;
+    font-weight: 700;
+    letter-spacing: 1.5px;
     text-transform: uppercase;
+    writing-mode: vertical-rl;
+    opacity: 0.9;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
   }
   #zapsight-widget-panel {
     position: fixed;
@@ -273,7 +284,7 @@ export function injectWidget(html: string, options: InjectionOptions): string {
   // --- Tab ---
   var tab = document.createElement('button');
   tab.id = 'zapsight-widget-tab';
-  tab.innerHTML = '<span class="zs-tab-icon">\\uD83D\\uDECD\\uFE0F</span><span class="zs-tab-caret" id="zs-tab-caret">\\u2039</span>';
+  tab.innerHTML = '<span class="zs-tab-icon">\\uD83D\\uDCAC</span><span class="zs-tab-label">AI Help</span>';
   tab.title = 'Open AI Shopping Assistant';
   document.body.appendChild(tab);
 
@@ -283,7 +294,7 @@ export function injectWidget(html: string, options: InjectionOptions): string {
   panel.innerHTML =
     '<div class="zs-header">' +
       '<div class="zs-header-left">' +
-        '<div class="zs-brand"><span class="zs-brand-icon">\\uD83D\\uDECD\\uFE0F</span> ShopPilot</div>' +
+        '<div class="zs-brand"><span class="zs-brand-icon">\\u2728</span> ShopPilot</div>' +
         '<div class="zs-store-name">' + escapeHtml(storeName) + '</div>' +
       '</div>' +
       '<div class="zs-header-right">' +
@@ -312,10 +323,9 @@ export function injectWidget(html: string, options: InjectionOptions): string {
   document.body.appendChild(panel);
 
   // --- Toggle ---
-  var caret = document.getElementById('zs-tab-caret');
   tab.addEventListener('click', function() {
     var isOpen = panel.classList.toggle('open');
-    caret.textContent = isOpen ? '\\u203A' : '\\u2039';
+    tab.classList.toggle('hidden', isOpen);
     if (isOpen) {
       document.getElementById('zs-input').focus();
       logEvent('widget_opened');
@@ -325,7 +335,7 @@ export function injectWidget(html: string, options: InjectionOptions): string {
   // --- Close ---
   document.getElementById('zs-close').addEventListener('click', function() {
     panel.classList.remove('open');
-    caret.textContent = '\\u2039';
+    tab.classList.remove('hidden');
   });
 
   // --- Start Over ---
