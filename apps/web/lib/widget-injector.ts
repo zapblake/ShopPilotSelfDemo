@@ -382,6 +382,7 @@ export function injectWidget(html: string, options: InjectionOptions): string {
   var state = 'greeting'; // 'greeting' or 'conversation'
   var messageCount = 0;
   var ctaShown = false;
+  var conversationHistory = [];
 
   // --- Tab ---
   var tab = document.createElement('button');
@@ -480,14 +481,44 @@ export function injectWidget(html: string, options: InjectionOptions): string {
     appendMessage(text, 'user');
     logEvent('message_sent', { text: text });
     messageCount++;
-    setTimeout(function() {
-      var response = getDemoResponse(text, config);
-      appendMessage(response, 'bot');
+
+    // Show typing indicator
+    var typingId = 'zs-typing-' + Date.now();
+    var typingEl = document.createElement('div');
+    typingEl.id = typingId;
+    typingEl.className = 'zs-message bot';
+    typingEl.innerHTML = '<span style="opacity:0.5;letter-spacing:2px;">&#8226;&#8226;&#8226;</span>';
+    typingEl.style.fontStyle = 'italic';
+    document.getElementById('zs-messages').appendChild(typingEl);
+    document.getElementById('zs-messages').scrollTop = document.getElementById('zs-messages').scrollHeight;
+
+    fetch('/api/widget/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: text,
+        history: conversationHistory,
+        storeContext: config.storeContext,
+      }),
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var reply = data.reply || 'Happy to help! What are you looking for?';
+      var typing = document.getElementById(typingId);
+      if (typing) typing.remove();
+      conversationHistory.push({ role: 'user', content: text });
+      conversationHistory.push({ role: 'assistant', content: reply });
+      appendMessage(reply, 'bot');
       if (messageCount === 2 && !ctaShown) {
         ctaShown = true;
         appendCTA();
       }
-    }, 600);
+    })
+    .catch(function() {
+      var typing = document.getElementById(typingId);
+      if (typing) typing.remove();
+      appendMessage('Sorry, I hit a snag — try again in a moment!', 'bot');
+    });
   }
 
   document.getElementById('zs-send').addEventListener('click', sendMessage);
@@ -521,24 +552,6 @@ export function injectWidget(html: string, options: InjectionOptions): string {
     var d = document.createElement('div');
     d.textContent = str;
     return d.innerHTML;
-  }
-
-  function getDemoResponse(text, cfg) {
-    var lower = text.toLowerCase();
-    var name = cfg.storeContext ? cfg.storeContext.storeName : 'this store';
-    if (lower.includes('mattress') || lower.includes('sleep') || lower.includes('bed')) {
-      return 'Great question! ' + name + ' has a great selection of mattresses. Would you like me to help narrow down options based on your sleep style?';
-    }
-    if (lower.includes('price') || lower.includes('cost') || lower.includes('how much')) {
-      return 'Prices vary by model and size. I can help you find the best value based on your needs \\u2014 what are your top priorities?';
-    }
-    if (lower.includes('delivery') || lower.includes('shipping')) {
-      return name + ' offers delivery options including white glove setup. Would you like more details on delivery to your area?';
-    }
-    if (lower.includes('return') || lower.includes('refund')) {
-      return 'Most products come with a comfort trial period. I\\'d recommend confirming the specific return policy on the product page.';
-    }
-    return 'I\\'d be happy to help you find the right product at ' + name + '! Could you tell me more about what you\\'re looking for?';
   }
 
   function logEvent(name, payload) {
