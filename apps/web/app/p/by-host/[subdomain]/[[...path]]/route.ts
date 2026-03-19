@@ -39,9 +39,9 @@ export async function GET(
   const storage = getStorageAdapter();
   const result = await getRenderedPageForPath(prisma, storage, jobId, previewPath);
 
-  // No rendered content (renders failed) → redirect to status page
+  // No rendered content (renders failed) → redirect to demo store fallback
   if (!result) {
-    return NextResponse.redirect(`${appUrl}/preview-jobs/${jobId}`, 302);
+    return NextResponse.redirect(`${appUrl}/demo/${jobId}`, 302);
   }
 
   const domain = job?.normalizedDomain ?? subdomain;

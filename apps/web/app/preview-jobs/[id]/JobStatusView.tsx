@@ -275,10 +275,32 @@ export function JobStatusView({ jobId }: { jobId: string }) {
         {isFailed && (
           <p style={{ fontSize: "13px", color: "rgba(255,107,107,0.6)", marginTop: "8px" }}>
             {allRendersFailed
-              ? "We had trouble rendering this store's pages. Try a different URL or book a live demo."
-              : job.errorMessage || "Please try again or book a live demo below."}
+              ? "Your site uses bot protection — we'll show you Shop Pilot on a demo store instead."
+              : job.errorMessage || "Please try again or see the demo store below."}
           </p>
         )}
+
+      {/* Demo store fallback CTA when renders failed */}
+      {isFailed && allRendersFailed && (
+        <div style={{ textAlign: "center", marginTop: "20px" }}>
+          <a
+            href={`/demo/${job.id}`}
+            style={{
+              display: "inline-block",
+              background: "linear-gradient(135deg,#ff6b35,#ff3d7f)",
+              color: "#fff",
+              fontSize: "15px",
+              fontWeight: 700,
+              padding: "13px 28px",
+              borderRadius: "12px",
+              textDecoration: "none",
+              letterSpacing: "-0.2px",
+            }}
+          >
+            See the Demo Store →
+          </a>
+        </div>
+      )}
       </div>
 
       {/* CTA button when ready */}
