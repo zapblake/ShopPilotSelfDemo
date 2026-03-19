@@ -1,11 +1,8 @@
-import { Worker } from "bullmq";
 import { PrismaClient } from "@prisma/client";
 import pino from "pino";
-import { bullmqConnection } from "../redis";
 import { MockRendererProvider, PlaywrightRendererProvider } from "@zapsight/renderer";
 import type { RendererProvider } from "@zapsight/renderer";
 import { getStorageAdapter } from "@zapsight/storage";
-import type { RenderJobData } from "../queues/render-queue";
 
 const logger = pino({ name: "render-worker" });
 const prisma = new PrismaClient();
@@ -21,209 +18,173 @@ function createRenderer(): RendererProvider {
 
 const renderer = createRenderer();
 
-export function createRenderWorker() {
-  const worker = new Worker<RenderJobData>(
-    "render-jobs",
-    async (job) => {
-      const { previewJobId } = job.data;
-      logger.info({ previewJobId }, "Processing render job");
+async function processNextRenderJob(): Promise<boolean> {
+  // Pick up any job in READY_FOR_RENDER status
+  const job = await prisma.previewJob.findFirst({
+    where: { status: "READY_FOR_RENDER" },
+    orderBy: { createdAt: "asc" },
+  });
 
-      try {
-        // 1. Find pending RenderedPage records
-        const pendingPages = await prisma.renderedPage.findMany({
-          where: { previewJobId, renderStatus: "PENDING" },
-        });
+  if (!job) return false;
 
-        if (pendingPages.length === 0) {
-          logger.warn({ previewJobId }, "No pending pages to render");
-          return;
-        }
+  // Claim it
+  const claimed = await prisma.previewJob.updateMany({
+    where: { id: job.id, status: "READY_FOR_RENDER" },
+    data: { status: "RENDERING" },
+  });
 
-        // 2. Update job status to RENDERING
-        await prisma.previewJob.update({
-          where: { id: previewJobId },
-          data: { status: "RENDERING" },
-        });
+  if (claimed.count === 0) return false;
 
-        // 3. Render each page
-        for (const renderedPage of pendingPages) {
-          try {
-            // Mark as RENDERING
-            await prisma.renderedPage.update({
-              where: { id: renderedPage.id },
-              data: {
-                renderStatus: "RENDERING",
-                renderStartedAt: new Date(),
-              },
-            });
+  const previewJobId = job.id;
+  logger.info({ previewJobId }, "Processing render job");
 
-            // Render the page
-            const result = await renderer.render({
-              url: renderedPage.sourceUrl,
-              jobId: previewJobId,
-              pageType: renderedPage.previewPath,
-            });
+  try {
+    // 1. Find pending RenderedPage records
+    const pendingPages = await prisma.renderedPage.findMany({
+      where: { previewJobId, renderStatus: "PENDING" },
+    });
 
-            // Upload HTML to storage (best-effort — may not be available cross-env)
-            const htmlKey = `jobs/${previewJobId}/pages/${renderedPage.id}/index.html`;
-            try {
-              await storage.upload(htmlKey, Buffer.from(result.html, "utf-8"), "text/html");
-            } catch (storageErr) {
-              logger.warn({ pageId: renderedPage.id }, "Storage upload failed (non-fatal), falling back to DB");
-            }
-
-            // Upload screenshot to storage (best-effort)
-            const screenshotKey = `jobs/${previewJobId}/pages/${renderedPage.id}/screenshot.png`;
-            try {
-              await storage.upload(screenshotKey, result.screenshotBuffer, "image/png");
-            } catch (_) { /* non-fatal */ }
-
-            // Update RenderedPage as DONE — store HTML directly in DB for cross-env access
-            await prisma.renderedPage.update({
-              where: { id: renderedPage.id },
-              data: {
-                renderStatus: "DONE",
-                htmlBlobKey: htmlKey,
-                screenshotBlobKey: screenshotKey,
-                htmlContent: result.html,
-                extractedJson: JSON.parse(JSON.stringify(result.metadata)),
-                renderFinishedAt: new Date(),
-                renderDurationMs: result.durationMs,
-              },
-            } as any);
-
-            logger.info(
-              { pageId: renderedPage.id, url: renderedPage.sourceUrl, durationMs: result.durationMs },
-              "Page rendered successfully"
-            );
-          } catch (err) {
-            const message = err instanceof Error ? err.message : String(err);
-            logger.error(
-              { pageId: renderedPage.id, url: renderedPage.sourceUrl, error: message },
-              "Failed to render page"
-            );
-
-            await prisma.renderedPage.update({
-              where: { id: renderedPage.id },
-              data: {
-                renderStatus: "FAILED",
-                errorMessage: message,
-                renderFinishedAt: new Date(),
-              },
-            });
-          }
-        }
-
-        // 4. Set previewPath on each rendered page based on sourceUrl
-        const donePages = await prisma.renderedPage.findMany({
-          where: { previewJobId, renderStatus: "DONE" },
-        });
-
-        for (const page of donePages) {
-          try {
-            const url = new URL(page.sourceUrl);
-            const previewPath = url.pathname === "" ? "/" : url.pathname;
-            await prisma.renderedPage.update({
-              where: { id: page.id },
-              data: { previewPath },
-            });
-          } catch {
-            // If URL parsing fails, default to "/"
-            await prisma.renderedPage.update({
-              where: { id: page.id },
-              data: { previewPath: "/" },
-            });
-          }
-        }
-
-        // 5. Create or update PreviewHost records
-        // Primary: preview-{jobId}.zapsight.us (direct jobId lookup)
-        const primaryHostname = `preview-${previewJobId}.zapsight.us`;
-        await prisma.previewHost.upsert({
-          where: { hostname: primaryHostname },
-          create: {
-            previewJobId,
-            hostname: primaryHostname,
-            active: true,
-            jobStatus: "PREVIEW_READY",
-            previewBaseUrl: `https://${primaryHostname}`,
-          },
-          update: {
-            active: true,
-            jobStatus: "PREVIEW_READY",
-            previewBaseUrl: `https://${primaryHostname}`,
-          },
-        });
-
-        // Secondary: {normalizedDomain-slug}.zapsight.us (friendly domain lookup)
-        // Derive slug: strip TLD, replace dots/hyphens with single hyphen, lowercase
-        const job = await prisma.previewJob.findUnique({ where: { id: previewJobId }, select: { normalizedDomain: true } });
-        if (job?.normalizedDomain) {
-          const domainSlug = job.normalizedDomain
-            .replace(/\.(myshopify\.com|com|net|org|io|co)$/, "")
-            .replace(/[^a-z0-9]/g, "-")
-            .replace(/-+/g, "-")
-            .replace(/^-|-$/g, "")
-            .slice(0, 40);
-          const friendlyHostname = `${domainSlug}.zapsight.us`;
-          if (friendlyHostname !== primaryHostname) {
-            await prisma.previewHost.upsert({
-              where: { hostname: friendlyHostname },
-              create: {
-                previewJobId,
-                hostname: friendlyHostname,
-                active: true,
-                jobStatus: "PREVIEW_READY",
-                previewBaseUrl: `https://${friendlyHostname}`,
-              },
-              update: {
-                active: true,
-                jobStatus: "PREVIEW_READY",
-                previewBaseUrl: `https://${friendlyHostname}`,
-              },
-            });
-          }
-        }
-
-        // 6. Update job status to PREVIEW_READY
-        await prisma.previewJob.update({
-          where: { id: previewJobId },
-          data: {
-            status: "PREVIEW_READY",
-            completedAt: new Date(),
-          },
-        });
-
-        logger.info({ previewJobId }, "Render job completed, preview ready");
-      } catch (err) {
-        logger.error({ previewJobId, error: err }, "Render job failed fatally");
-
-        await prisma.previewJob.update({
-          where: { id: previewJobId },
-          data: {
-            status: "FAILED",
-            errorCode: "RENDER_ERROR",
-            errorMessage: err instanceof Error ? err.message : "Unknown render error",
-            completedAt: new Date(),
-          },
-        });
-
-        throw err;
-      }
-    },
-    {
-      connection: bullmqConnection,
-      concurrency: 3,
+    if (pendingPages.length === 0) {
+      logger.warn({ previewJobId }, "No pending pages to render");
+      // Still mark as ready
+      await prisma.previewJob.update({
+        where: { id: previewJobId },
+        data: { status: "PREVIEW_READY", completedAt: new Date() },
+      });
+      return true;
     }
-  );
 
-  worker.on("completed", (job) => {
-    logger.info({ jobId: job?.id }, "Render worker job completed");
-  });
+    // 2. Render each page
+    for (const renderedPage of pendingPages) {
+      try {
+        await prisma.renderedPage.update({
+          where: { id: renderedPage.id },
+          data: { renderStatus: "RENDERING", renderStartedAt: new Date() },
+        });
 
-  worker.on("failed", (job, err) => {
-    logger.error({ jobId: job?.id, error: err.message }, "Render worker job failed");
-  });
+        const result = await renderer.render({
+          url: renderedPage.sourceUrl,
+          jobId: previewJobId,
+          pageType: renderedPage.previewPath,
+        });
 
-  return worker;
+        const htmlKey = `jobs/${previewJobId}/pages/${renderedPage.id}/index.html`;
+        const screenshotKey = `jobs/${previewJobId}/pages/${renderedPage.id}/screenshot.png`;
+
+        try {
+          await storage.upload(htmlKey, Buffer.from(result.html, "utf-8"), "text/html");
+        } catch {
+          logger.warn({ pageId: renderedPage.id }, "Storage upload failed (non-fatal)");
+        }
+
+        try {
+          await storage.upload(screenshotKey, result.screenshotBuffer, "image/png");
+        } catch { /* non-fatal */ }
+
+        // Parse URL for previewPath
+        let previewPath = "/";
+        try {
+          const u = new URL(renderedPage.sourceUrl);
+          previewPath = u.pathname || "/";
+        } catch { /* keep default */ }
+
+        await (prisma.renderedPage.update as any)({
+          where: { id: renderedPage.id },
+          data: {
+            renderStatus: "DONE",
+            htmlBlobKey: htmlKey,
+            screenshotBlobKey: screenshotKey,
+            htmlContent: result.html,
+            extractedJson: JSON.parse(JSON.stringify(result.metadata)),
+            renderFinishedAt: new Date(),
+            renderDurationMs: result.durationMs,
+            previewPath,
+          },
+        });
+
+        logger.info({ pageId: renderedPage.id, url: renderedPage.sourceUrl, durationMs: result.durationMs }, "Page rendered successfully");
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        logger.error({ pageId: renderedPage.id, url: renderedPage.sourceUrl, error: message }, "Failed to render page");
+
+        await prisma.renderedPage.update({
+          where: { id: renderedPage.id },
+          data: { renderStatus: "FAILED", errorMessage: message, renderFinishedAt: new Date() },
+        });
+      }
+    }
+
+    // 3. Create PreviewHost records
+    const primaryHostname = `preview-${previewJobId}.zapsight.us`;
+    await prisma.previewHost.upsert({
+      where: { hostname: primaryHostname },
+      create: { previewJobId, hostname: primaryHostname, active: true, jobStatus: "PREVIEW_READY", previewBaseUrl: `https://${primaryHostname}` },
+      update: { active: true, jobStatus: "PREVIEW_READY", previewBaseUrl: `https://${primaryHostname}` },
+    });
+
+    if (job.normalizedDomain) {
+      const domainSlug = job.normalizedDomain
+        .replace(/\.(myshopify\.com|com|net|org|io|co)$/, "")
+        .replace(/[^a-z0-9]/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "")
+        .slice(0, 40);
+      const friendlyHostname = `${domainSlug}.zapsight.us`;
+      if (friendlyHostname !== primaryHostname) {
+        await prisma.previewHost.upsert({
+          where: { hostname: friendlyHostname },
+          create: { previewJobId, hostname: friendlyHostname, active: true, jobStatus: "PREVIEW_READY", previewBaseUrl: `https://${friendlyHostname}` },
+          update: { active: true, jobStatus: "PREVIEW_READY", previewBaseUrl: `https://${friendlyHostname}` },
+        });
+      }
+    }
+
+    // 4. Mark job complete
+    await prisma.previewJob.update({
+      where: { id: previewJobId },
+      data: { status: "PREVIEW_READY", completedAt: new Date() },
+    });
+
+    logger.info({ previewJobId }, "Render job completed, preview ready");
+  } catch (err) {
+    logger.error({ previewJobId, error: err }, "Render job failed fatally");
+
+    await prisma.previewJob.update({
+      where: { id: previewJobId },
+      data: {
+        status: "FAILED",
+        errorCode: "RENDER_ERROR",
+        errorMessage: err instanceof Error ? err.message : "Unknown render error",
+        completedAt: new Date(),
+      },
+    });
+  }
+
+  return true;
+}
+
+export function createRenderWorker() {
+  let stopped = false;
+
+  async function poll() {
+    while (!stopped) {
+      try {
+        const didWork = await processNextRenderJob();
+        if (!didWork) {
+          await new Promise((r) => setTimeout(r, 5000));
+        }
+      } catch (err) {
+        logger.error({ error: err }, "Render poll loop error");
+        await new Promise((r) => setTimeout(r, 5000));
+      }
+    }
+  }
+
+  poll();
+
+  return {
+    close: async () => {
+      stopped = true;
+    },
+  };
 }
