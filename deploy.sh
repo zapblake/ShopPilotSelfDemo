@@ -9,16 +9,9 @@ echo "🚀 Building and deploying to demo.zapsight.us..."
 DEPLOY_URL=$(vercel deploy --yes 2>&1 | grep -Eo "https://web-[a-z0-9]+-blake-austins-projects\.vercel\.app" | tail -1)
 echo "✅ Preview deployed: $DEPLOY_URL"
 
-# Wait for deployment to be ready (up to 120s)
-echo "⏳ Waiting for deployment to be ready..."
-for i in $(seq 1 24); do
-  STATUS=$(vercel inspect "$DEPLOY_URL" 2>&1 | grep -i "status" | head -1)
-  if echo "$STATUS" | grep -qi "ready"; then
-    echo "✅ Deployment is ready"
-    break
-  fi
-  sleep 5
-done
+# Wait for deployment to be ready
+echo "⏳ Waiting 60s for deployment to be ready..."
+sleep 60
 
 # Explicitly alias ONLY demo.zapsight.us — never the apex or wildcard
 vercel alias set "$DEPLOY_URL" demo.zapsight.us
