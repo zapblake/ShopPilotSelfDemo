@@ -69,14 +69,14 @@ export default function HomePage() {
 
       {/* Logo / wordmark */}
       <div style={{ marginBottom: "48px", textAlign: "center" }}>
-        <div style={{
-          display: "inline-flex", alignItems: "center", gap: "12px",
-        }}>
-          <Image src="/favicon.png" alt="ZapSight" width={36} height={36} style={{ borderRadius: "8px" }} />
-          <span style={{
-            fontSize: "22px", fontWeight: 700, color: "white", letterSpacing: "-0.4px",
-          }}>ZapSight</span>
-        </div>
+        <Image
+          src="/zapsight-wordmark.png"
+          alt="ZapSight"
+          width={180}
+          height={45}
+          style={{ height: "45px", width: "auto" }}
+          priority
+        />
       </div>
 
       {/* Hero */}

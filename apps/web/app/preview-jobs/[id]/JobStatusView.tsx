@@ -175,15 +175,11 @@ export function JobStatusView({ jobId }: { jobId: string }) {
 
       {/* Logo */}
       <div style={{ textAlign: "center", marginBottom: "32px" }}>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: "12px" }}>
-          <img src="/favicon.png" alt="ZapSight" width={32} height={32} style={{ borderRadius: "7px" }} />
-          <span style={{
-            fontSize: "20px",
-            fontWeight: 700,
-            color: "white",
-            letterSpacing: "-0.02em",
-          }}>ZapSight</span>
-        </div>
+        <img
+          src="/zapsight-wordmark.png"
+          alt="ZapSight"
+          style={{ height: "36px", width: "auto" }}
+        />
       </div>
 
       {/* Store name badge */}
