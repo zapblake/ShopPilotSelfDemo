@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
                 `Domain: ${job.normalizedDomain}`,
                 `Email: ${job.email || "not provided"}`,
                 `Job: ${previewJobId}`,
-                `Preview: https://zapsight.us/p/${previewJobId}`,
+                `Preview: https://demo.zapsight.us/p/${previewJobId}`,
               ].join("\n")
             );
           }

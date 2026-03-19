@@ -14,7 +14,7 @@ export async function GET(
   const { subdomain, path } = await params;
   const previewPath = path ? "/" + path.join("/") : "/";
   const hostname = `${subdomain}.zapsight.us`;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://zapsight.us";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://demo.zapsight.us";
 
   const previewHost = await prisma.previewHost.findUnique({
     where: { hostname },

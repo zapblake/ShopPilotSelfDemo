@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
           secure: false,
           auth: { user: smtpUser, pass: smtpPass },
         });
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://zapsight.us";
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://demo.zapsight.us";
         const statusUrl = `${appUrl}/preview-jobs/${job.id}`;
 
         transporter.sendMail({

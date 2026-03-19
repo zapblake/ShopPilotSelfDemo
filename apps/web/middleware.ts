@@ -7,8 +7,7 @@ function classifyHost(hostname: string): { type: HostType; subdomain?: string } 
   const lowerHost = hostname.split(":")[0].toLowerCase();
 
   if (
-    lowerHost === "zapsight.us" ||
-    lowerHost === "www.zapsight.us" ||
+    lowerHost === "demo.zapsight.us" ||
     lowerHost === "localhost" ||
     lowerHost === "127.0.0.1"
   ) {
