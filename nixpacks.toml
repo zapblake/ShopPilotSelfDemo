@@ -5,7 +5,7 @@ nixPkgs = ["nodejs_22"]
 cmds = ["npm install -g pnpm@9 && pnpm install --frozen-lockfile"]
 
 [phases.build]
-cmds = ["echo 'no build step required'"]
+cmds = ["pnpm exec prisma generate --schema=packages/db/prisma/schema.prisma"]
 
 [start]
-cmd = "npx ts-node packages/queue/src/run-worker.ts"
+cmd = "pnpm --filter @zapsight/queue run start"
