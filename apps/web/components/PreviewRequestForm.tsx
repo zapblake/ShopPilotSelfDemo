@@ -37,51 +37,87 @@ export function PreviewRequestForm() {
     }
   }
 
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    background: "rgba(255,255,255,0.06)",
+    border: "1px solid rgba(255,255,255,0.12)",
+    borderRadius: "12px",
+    padding: "14px 16px 14px 44px",
+    fontSize: "15px",
+    color: "white",
+    outline: "none",
+    boxSizing: "border-box",
+    fontFamily: "inherit",
+    transition: "border-color 0.15s",
+  };
+
+  const iconStyle: React.CSSProperties = {
+    position: "absolute",
+    left: "14px",
+    top: "50%",
+    transform: "translateY(-50%)",
+    fontSize: "16px",
+    pointerEvents: "none",
+    userSelect: "none",
+    opacity: 0.6,
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
-      {/* URL input — accepts anything, https:// added automatically */}
-      <div className="relative">
-        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm select-none pointer-events-none">
-          🛍️
-        </span>
+    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+      {/* URL input */}
+      <div style={{ position: "relative" }}>
+        <span style={iconStyle}>🏪</span>
         <input
           type="text"
           required
           placeholder="yourstore.com or yourstore.myshopify.com"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          className="w-full rounded-lg border border-gray-300 pl-10 pr-4 py-3 text-base focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+          style={inputStyle}
         />
       </div>
 
-      {/* Email — required so we can send them their link */}
-      <div className="relative">
-        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm select-none pointer-events-none">
-          ✉️
-        </span>
+      {/* Email input */}
+      <div style={{ position: "relative" }}>
+        <span style={iconStyle}>✉️</span>
         <input
           type="email"
           required
-          placeholder="your@email.com — we'll send you the preview link"
+          placeholder="your@email.com — we'll send you the link"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded-lg border border-gray-300 pl-10 pr-4 py-3 text-base focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+          style={inputStyle}
         />
       </div>
 
       <button
         type="submit"
         disabled={submitting || !url || !email}
-        className="w-full rounded-lg bg-blue-600 px-4 py-3 text-base font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+        style={{
+          width: "100%",
+          padding: "15px",
+          borderRadius: "12px",
+          border: "none",
+          background: submitting || !url || !email
+            ? "rgba(255,107,53,0.4)"
+            : "linear-gradient(135deg, #ff6b35 0%, #ff3d7f 100%)",
+          color: "white",
+          fontSize: "15px",
+          fontWeight: 700,
+          cursor: submitting || !url || !email ? "not-allowed" : "pointer",
+          fontFamily: "inherit",
+          letterSpacing: "-0.2px",
+          transition: "opacity 0.15s",
+        }}
       >
         {submitting ? "Building your preview..." : "See My Store with AI →"}
       </button>
 
-      <p className="text-xs text-gray-400 text-center">
-        Takes ~30 seconds. No install required.
-      </p>
-
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && (
+        <p style={{ fontSize: "13px", color: "#f87171", textAlign: "center", margin: 0 }}>
+          {error}
+        </p>
+      )}
     </form>
   );
 }
