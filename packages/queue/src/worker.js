@@ -29,12 +29,12 @@ const STATUSES = [
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function setStatus(id, status, extra = {}) {
-  const sets = ['status = $2', 'updated_at = NOW()'];
+  const sets = ['status = $2', '"updatedAt" = NOW()'];
   const vals = [id, status];
   let i = 3;
   if (extra.errorCode) { sets.push(`error_code = $${i++}`); vals.push(extra.errorCode); }
   if (extra.errorMessage) { sets.push(`error_message = $${i++}`); vals.push(extra.errorMessage); }
-  if (extra.completedAt) { sets.push(`completed_at = NOW()`); }
+  if (extra.completedAt) { sets.push(`"completedAt" = NOW()`); }
   await pool.query(
     `UPDATE "PreviewJob" SET ${sets.join(', ')} WHERE id = $1`,
     vals
@@ -54,7 +54,7 @@ const worker = new Worker(
         await sleep(1500 + Math.random() * 1000);
       }
       await pool.query(
-        `UPDATE "PreviewJob" SET completed_at = NOW() WHERE id = $1`,
+        `UPDATE "PreviewJob" SET "completedAt" = NOW() WHERE id = $1`,
         [previewJobId]
       );
       console.log(`Job ${previewJobId} complete`);
