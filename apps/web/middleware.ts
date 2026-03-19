@@ -32,8 +32,15 @@ export function middleware(request: NextRequest) {
   if (type === "preview" && subdomain) {
     const pathname = request.nextUrl.pathname;
 
-    // Skip Next.js internals and API routes
-    if (pathname.startsWith("/_next/") || pathname.startsWith("/api/") || pathname === "/favicon.ico") {
+    // Skip Next.js internals, API routes, and app pages
+    if (
+      pathname.startsWith("/_next/") ||
+      pathname.startsWith("/api/") ||
+      pathname.startsWith("/preview-jobs/") ||
+      pathname.startsWith("/admin/") ||
+      pathname.startsWith("/status/") ||
+      pathname === "/favicon.ico"
+    ) {
       return NextResponse.next();
     }
 
