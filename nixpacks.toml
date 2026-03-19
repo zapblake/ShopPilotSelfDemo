@@ -2,10 +2,10 @@
 nixPkgs = ["nodejs_22"]
 
 [phases.install]
-cmds = ["npm install -g pnpm@9 && pnpm install"]
+cmds = ["npm install -g pnpm@9 && pnpm install --frozen-lockfile"]
 
 [phases.build]
-cmds = []
+cmds = ["echo 'no build step required'"]
 
 [start]
 cmd = "npx ts-node packages/queue/src/run-worker.ts"
