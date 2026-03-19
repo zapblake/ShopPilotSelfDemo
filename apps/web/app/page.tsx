@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { PreviewRequestForm } from "@/components/PreviewRequestForm";
 
 export default function HomePage() {
@@ -13,7 +14,9 @@ export default function HomePage() {
             site
           </p>
         </div>
-        <PreviewRequestForm />
+        <Suspense fallback={null}>
+          <PreviewRequestForm />
+        </Suspense>
       </div>
     </main>
   );
