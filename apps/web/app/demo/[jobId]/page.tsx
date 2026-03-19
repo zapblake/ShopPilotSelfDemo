@@ -238,9 +238,28 @@ export default async function DemoPage({ params }: DemoPageProps) {
     widgetConfig = {
       previewJobId: jobId,
       normalizedDomain: rawDomain,
-      storeContext: { storeName, productType: "furniture" },
-      pageContext: { pageType: "home", title: "Home" },
-      demoFlags: { showDemoBadge: true, greetingOverride: `Hi! I'm the AI shopping assistant for ${storeName}. What can I help you find today?` },
+      storeName,
+      primaryColor: "#c8a96e",
+      mode: "preview",
+      promptContext: `You are a helpful AI shopping assistant for ${storeName}, a furniture store.`,
+      storeContext: {
+        storeName,
+        domain: rawDomain,
+        productTypes: ["furniture", "sofas", "beds", "chairs", "dining"],
+        sampleProducts: [],
+      },
+      pageContext: {
+        url: "/",
+        path: "/",
+        pageType: "home",
+        title: "Home",
+      },
+      demoFlags: {
+        isDemo: true,
+        showDemoBadge: true,
+        allowConversation: true,
+        greetingOverride: `Hi! I'm the AI shopping assistant for ${storeName}. What can I help you find today?`,
+      },
     };
   }
 
