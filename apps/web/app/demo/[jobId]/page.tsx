@@ -277,11 +277,11 @@ export default async function DemoPage({ params }: DemoPageProps) {
 ">
   <span style="display:flex;align-items:center;gap:8px;flex:1;min-width:200px;">
     <span style="font-size:16px;">🔒</span>
-    <span><strong style="color:white">${rawDomain}</strong> uses bot protection, so this is a <strong style="color:#ff6b35;">rough demo</strong> on a sample store — not your real site. The actual integration looks much better.</span>
+    <span><strong style="color:white">${rawDomain}</strong> uses bot protection, so this is a <strong style="color:#f5680a;">rough demo</strong> on a sample store — not your real site. The actual integration looks much better.</span>
   </span>
   <span style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
     <a href="https://calendly.com/blake-zapsight/30min" target="_blank" style="
-      display:inline-block; background:linear-gradient(135deg,#ff6b35,#ff3d7f);
+      display:inline-block; background:linear-gradient(135deg,#f5680a,#c9450d);
       color:white; font-weight:700; font-size:12px; padding:7px 16px;
       border-radius:20px; text-decoration:none; white-space:nowrap;
     ">Book a Custom Demo →</a>

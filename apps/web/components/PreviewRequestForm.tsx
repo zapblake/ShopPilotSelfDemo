@@ -107,8 +107,8 @@ export function PreviewRequestForm() {
           borderRadius: "12px",
           border: "none",
           background: submitting || !url || !email
-            ? "rgba(255,107,53,0.4)"
-            : "linear-gradient(135deg, #ff6b35 0%, #ff3d7f 100%)",
+            ? "rgba(245,104,10,0.4)"
+            : "linear-gradient(135deg, #f5680a 0%, #ff8d29 100%)",
           color: "white",
           fontSize: "15px",
           fontWeight: 700,

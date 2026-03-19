@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { PreviewRequestForm } from "@/components/PreviewRequestForm";
+import Image from "next/image";
 
 export default function HomePage() {
   return (
@@ -19,27 +20,25 @@ export default function HomePage() {
       <div style={{
         position: "absolute", top: "-20%", left: "50%", transform: "translateX(-50%)",
         width: "800px", height: "500px",
-        background: "radial-gradient(ellipse at center, rgba(255,107,53,0.12) 0%, transparent 70%)",
+        background: "radial-gradient(ellipse at center, rgba(245,104,10,0.10) 0%, transparent 70%)",
         pointerEvents: "none",
       }} />
       <div style={{
         position: "absolute", bottom: "-10%", right: "-10%",
         width: "400px", height: "400px",
-        background: "radial-gradient(ellipse at center, rgba(255,61,127,0.08) 0%, transparent 70%)",
+        background: "radial-gradient(ellipse at center, rgba(201,69,13,0.07) 0%, transparent 70%)",
         pointerEvents: "none",
       }} />
 
       {/* Logo / wordmark */}
       <div style={{ marginBottom: "48px", textAlign: "center" }}>
         <div style={{
-          display: "inline-flex", alignItems: "center", gap: "10px",
-          fontSize: "20px", fontWeight: 700, color: "white", letterSpacing: "-0.3px",
+          display: "inline-flex", alignItems: "center", gap: "12px",
         }}>
+          <Image src="/favicon.png" alt="ZapSight" width={36} height={36} style={{ borderRadius: "8px" }} />
           <span style={{
-            background: "linear-gradient(135deg, #ff6b35 0%, #ff3d7f 100%)",
-            borderRadius: "8px", padding: "4px 8px", fontSize: "14px", fontWeight: 800,
-          }}>ZS</span>
-          ZapSight
+            fontSize: "22px", fontWeight: 700, color: "white", letterSpacing: "-0.4px",
+          }}>ZapSight</span>
         </div>
       </div>
 
@@ -48,11 +47,11 @@ export default function HomePage() {
         {/* Badge */}
         <div style={{
           display: "inline-flex", alignItems: "center", gap: "8px",
-          background: "rgba(255,107,53,0.1)", border: "1px solid rgba(255,107,53,0.25)",
+          background: "rgba(245,104,10,0.10)", border: "1px solid rgba(245,104,10,0.25)",
           borderRadius: "100px", padding: "6px 16px", marginBottom: "24px",
-          fontSize: "13px", color: "#ff6b35", fontWeight: 600,
+          fontSize: "13px", color: "#f5680a", fontWeight: 600,
         }}>
-          <span>⚡</span> Shop Pilot — Free Preview
+          Shop Pilot — Free Preview
         </div>
 
         <h1 style={{
@@ -65,7 +64,7 @@ export default function HomePage() {
         }}>
           See your store with{" "}
           <span style={{
-            background: "linear-gradient(135deg, #ff6b35 0%, #ff3d7f 100%)",
+            background: "linear-gradient(135deg, #f5680a 0%, #ff8d29 100%)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             backgroundClip: "text",

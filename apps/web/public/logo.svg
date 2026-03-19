@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <defs>
+    <linearGradient id="zs-grad" x1="0" y1="200" x2="200" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#c9450d"/>
+      <stop offset="40%" stop-color="#f5680a"/>
+      <stop offset="100%" stop-color="#ff8d29"/>
+    </linearGradient>
+  </defs>
+  <!-- Z letterform -->
+  <path d="M30 38 L170 38 L170 60 L72 140 L170 140 L170 162 L30 162 L30 140 L128 60 L30 60 Z" fill="url(#zs-grad)"/>
+</svg>

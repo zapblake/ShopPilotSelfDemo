@@ -4,6 +4,10 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "ZapSight Shop Pilot — Free Preview",
   description: "See your store with ZapSight's AI shopping assistant — live in 30 seconds.",
+  icons: {
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+  },
 };
 
 export default function RootLayout({

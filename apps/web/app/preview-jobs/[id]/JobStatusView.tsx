@@ -94,8 +94,8 @@ function getStatusMessage(status: string): string {
 
 const pulseKeyframes = `
 @keyframes pulse-orange {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(255,107,53,0.5); }
-  50% { box-shadow: 0 0 0 10px rgba(255,107,53,0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245,104,10,0.5); }
+  50% { box-shadow: 0 0 0 10px rgba(245,104,10,0); }
 }
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(12px); }
@@ -175,14 +175,13 @@ export function JobStatusView({ jobId }: { jobId: string }) {
 
       {/* Logo */}
       <div style={{ textAlign: "center", marginBottom: "32px" }}>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: "10px" }}>
-          <span style={{ fontSize: "28px" }}>⚡</span>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: "12px" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/favicon.png" alt="ZapSight" width={32} height={32} style={{ borderRadius: "7px" }} />
           <span style={{
-            fontSize: "22px",
+            fontSize: "20px",
             fontWeight: 700,
-            background: "linear-gradient(135deg,#ff6b35,#f7931e)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
+            color: "white",
             letterSpacing: "-0.02em",
           }}>ZapSight</span>
         </div>
@@ -192,7 +191,7 @@ export function JobStatusView({ jobId }: { jobId: string }) {
       <div style={{ textAlign: "center", marginBottom: "36px" }}>
         <span style={{
           display: "inline-block",
-          background: "linear-gradient(135deg,#ff6b35,#f7931e)",
+          background: "linear-gradient(135deg,#f5680a,#ff8d29)",
           color: "#fff",
           fontSize: "13px",
           fontWeight: 600,
@@ -225,7 +224,7 @@ export function JobStatusView({ jobId }: { jobId: string }) {
                     background: "linear-gradient(135deg,#22c55e,#16a34a)",
                     color: "#fff",
                   } : isCurrent ? {
-                    background: "linear-gradient(135deg,#ff6b35,#f7931e)",
+                    background: "linear-gradient(135deg,#f5680a,#ff8d29)",
                     color: "#fff",
                     animation: "pulse-orange 2s ease-in-out infinite",
                   } : {
@@ -240,7 +239,7 @@ export function JobStatusView({ jobId }: { jobId: string }) {
                   fontSize: "10px",
                   fontWeight: 500,
                   marginTop: "6px",
-                  color: isDone ? "#22c55e" : isCurrent ? "#ff6b35" : "rgba(255,255,255,0.25)",
+                  color: isDone ? "#22c55e" : isCurrent ? "#f5680a" : "rgba(255,255,255,0.25)",
                   letterSpacing: "0.03em",
                   textTransform: "uppercase" as const,
                 }}>{step.label}</span>
@@ -287,7 +286,7 @@ export function JobStatusView({ jobId }: { jobId: string }) {
             href={`/demo/${job.id}`}
             style={{
               display: "inline-block",
-              background: "linear-gradient(135deg,#ff6b35,#ff3d7f)",
+              background: "linear-gradient(135deg,#f5680a,#c9450d)",
               color: "#fff",
               fontSize: "15px",
               fontWeight: 700,
@@ -312,7 +311,7 @@ export function JobStatusView({ jobId }: { jobId: string }) {
             rel="noopener noreferrer"
             style={{
               display: "inline-block",
-              background: "linear-gradient(135deg,#ff6b35,#f7931e)",
+              background: "linear-gradient(135deg,#f5680a,#ff8d29)",
               color: "#fff",
               fontSize: "16px",
               fontWeight: 600,
@@ -321,7 +320,7 @@ export function JobStatusView({ jobId }: { jobId: string }) {
               textDecoration: "none",
               letterSpacing: "0.01em",
               transition: "transform 0.15s ease, box-shadow 0.15s ease",
-              boxShadow: "0 4px 20px rgba(255,107,53,0.3)",
+              boxShadow: "0 4px 20px rgba(245,104,10,0.3)",
             }}
           >
             View Your Preview →

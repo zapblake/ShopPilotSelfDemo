@@ -656,10 +656,10 @@ export function injectWidget(html: string, options: InjectionOptions): string {
 <div id="zs-preview-notice" style="position:fixed;top:0;left:0;right:0;z-index:99995;background:linear-gradient(90deg,#1a1a1a,#1e1a2e);color:rgba(255,255,255,0.85);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.08);gap:16px;flex-wrap:wrap;">
   <span style="display:flex;align-items:center;gap:8px;flex:1;min-width:200px;">
     <span style="font-size:16px;">⚡</span>
-    <span>This is a <strong style="color:#ff6b35;">ZapSight preview</strong> of <strong style="color:white">${domain}</strong> — see how Shop Pilot would look on your real store.</span>
+    <span>This is a <strong style="color:#f5680a;">ZapSight preview</strong> of <strong style="color:white">${domain}</strong> — see how Shop Pilot would look on your real store.</span>
   </span>
   <span style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
-    <a href="https://calendly.com/blake-zapsight/30min" target="_blank" style="display:inline-block;background:linear-gradient(135deg,#ff6b35,#ff3d7f);color:white;font-weight:700;font-size:12px;padding:7px 16px;border-radius:20px;text-decoration:none;white-space:nowrap;">Book a Custom Demo →</a>
+    <a href="https://calendly.com/blake-zapsight/30min" target="_blank" style="display:inline-block;background:linear-gradient(135deg,#f5680a,#c9450d);color:white;font-weight:700;font-size:12px;padding:7px 16px;border-radius:20px;text-decoration:none;white-space:nowrap;">Book a Custom Demo →</a>
     <span onclick="this.closest('#zs-preview-notice').style.display='none';document.body.style.paddingTop='0'" style="color:rgba(255,255,255,0.35);cursor:pointer;font-size:20px;padding:0 6px;line-height:1;user-select:none;">×</span>
   </span>
 </div>
