@@ -13,8 +13,8 @@ export default function AdminLayout({
             <span className="text-orange-500">Zap</span>Sight Admin
           </span>
           <div className="flex items-center gap-6 text-sm text-gray-400">
-            <NavLink href="/admin">Dashboard</NavLink>
-            <NavLink href="/admin/preview-jobs">Jobs List</NavLink>
+            <NavLink href="/admin">Leads</NavLink>
+            <NavLink href="/admin/preview-jobs">All Jobs</NavLink>
           </div>
         </div>
       </nav>

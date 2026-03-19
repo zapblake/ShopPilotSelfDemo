@@ -2,44 +2,32 @@ import { prisma } from "@/lib/prisma";
 import { timeAgo } from "@/lib/time-utils";
 import Link from "next/link";
 
-const STATUS_BADGE: Record<string, string> = {
-  PENDING: "bg-gray-700 text-gray-300",
-  QUEUED: "bg-gray-700 text-gray-300",
-  CRAWLING: "bg-blue-900/60 text-blue-300",
-  CLASSIFYING: "bg-yellow-900/60 text-yellow-300",
-  READY_FOR_RENDER: "bg-cyan-900/60 text-cyan-300",
-  RENDERING: "bg-purple-900/60 text-purple-300",
-  RENDER_COMPLETE: "bg-green-900/60 text-green-300",
-  PREVIEW_READY: "bg-emerald-900/60 text-emerald-300",
-  READY: "bg-emerald-900/60 text-emerald-300",
-  FAILED: "bg-red-900/60 text-red-300",
-  EXPIRED: "bg-gray-800 text-gray-500",
-};
+// Heat score: how engaged is this lead?
+function heatScore(events: { eventName: string }[]) {
+  let score = 0;
+  for (const e of events) {
+    if (e.eventName === "widget_loaded") score += 1;
+    if (e.eventName === "widget_opened") score += 3;
+    if (e.eventName === "message_sent") score += 5;
+    if (e.eventName === "cta_shown") score += 2;
+    if (e.eventName === "cta_clicked") score += 20;
+  }
+  return score;
+}
 
-const EVENT_BADGE: Record<string, string> = {
-  widget_loaded: "bg-gray-700 text-gray-300",
-  widget_opened: "bg-blue-900/60 text-blue-300",
-  message_sent: "bg-purple-900/60 text-purple-300",
-  cta_shown: "bg-yellow-900/60 text-yellow-300",
-  cta_clicked: "bg-orange-900/60 text-orange-300",
-  lead_submitted: "bg-emerald-900/60 text-emerald-300",
-};
+function heatLabel(score: number): { label: string; color: string; dot: string } {
+  if (score >= 20) return { label: "🔥 Hot", color: "text-orange-400", dot: "bg-orange-500" };
+  if (score >= 10) return { label: "⚡ Warm", color: "text-yellow-400", dot: "bg-yellow-500" };
+  if (score >= 3) return { label: "👀 Engaged", color: "text-blue-400", dot: "bg-blue-500" };
+  return { label: "New", color: "text-gray-500", dot: "bg-gray-600" };
+}
 
-const FUNNEL_STEPS = [
-  { key: "PENDING", label: "Submitted" },
-  { key: "QUEUED", label: "Queued" },
-  { key: "CRAWLING", label: "Crawling" },
-  { key: "READY_FOR_RENDER", label: "Ready for Render" },
-  { key: "RENDERING", label: "Rendering" },
-  { key: "PREVIEW_READY", label: "Preview Ready" },
-] as const;
-
-export default async function AdminDashboard({
+export default async function AdminCRM({
   searchParams,
 }: {
-  searchParams: Promise<{ secret?: string }>;
+  searchParams: Promise<{ secret?: string; filter?: string }>;
 }) {
-  const { secret } = await searchParams;
+  const { secret, filter } = await searchParams;
 
   if (!process.env.ADMIN_SECRET || secret !== process.env.ADMIN_SECRET) {
     return (
@@ -51,250 +39,210 @@ export default async function AdminDashboard({
     );
   }
 
-  const [
-    totalSubmissions,
-    demosActive,
-    ctaClicks,
-    leadsCaptured,
-    funnelRaw,
-    eventBreakdown,
-    recentJobs,
-    recentEvents,
-    totalEvents,
-  ] = await Promise.all([
-    prisma.previewJob.count(),
-    prisma.previewJob.count({
-      where: { status: { in: ["PREVIEW_READY", "RENDER_COMPLETE", "READY"] } },
-    }),
-    prisma.previewEvent.count({ where: { eventName: "cta_clicked" } }),
-    prisma.previewJob.count({ where: { email: { not: null } } }),
-    prisma.previewJob.groupBy({ by: ["status"], _count: { _all: true } }),
-    prisma.previewEvent.groupBy({
-      by: ["eventName"],
-      _count: { _all: true },
-      orderBy: { _count: { eventName: "desc" } },
-    }),
-    prisma.previewJob.findMany({
-      take: 20,
-      orderBy: { createdAt: "desc" },
-      include: {
-        _count: { select: { events: true } },
-        events: { where: { eventName: "cta_clicked" }, take: 1, select: { id: true } },
-      },
-    }),
-    prisma.previewEvent.findMany({
-      take: 10,
-      orderBy: { createdAt: "desc" },
-      include: { previewJob: { select: { normalizedDomain: true } } },
-    }),
-    prisma.previewEvent.count(),
-  ]);
+  const jobs = await prisma.previewJob.findMany({
+    orderBy: { createdAt: "desc" },
+    include: {
+      events: { select: { eventName: true, createdAt: true }, orderBy: { createdAt: "desc" } },
+    },
+  });
 
-  const funnel: Record<string, number> = {};
-  for (const row of funnelRaw) funnel[row.status] = row._count._all;
+  // Enrich each job with heat score + signals
+  const leads = jobs.map((job) => {
+    const score = heatScore(job.events);
+    const heat = heatLabel(score);
+    const messagesCount = job.events.filter((e) => e.eventName === "message_sent").length;
+    const widgetOpened = job.events.some((e) => e.eventName === "widget_opened");
+    const ctaClicked = job.events.some((e) => e.eventName === "cta_clicked");
+    const lastActivity = job.events[0]?.createdAt ?? job.createdAt;
+    return { ...job, score, heat, messagesCount, widgetOpened, ctaClicked, lastActivity };
+  });
 
-  const funnelMax = Math.max(1, ...FUNNEL_STEPS.map((s) => funnel[s.key] ?? 0));
+  // Filter
+  const filtered =
+    filter === "hot"
+      ? leads.filter((l) => l.score >= 20)
+      : filter === "warm"
+        ? leads.filter((l) => l.score >= 10 && l.score < 20)
+        : filter === "engaged"
+          ? leads.filter((l) => l.score >= 3 && l.score < 10)
+          : filter === "email"
+            ? leads.filter((l) => !!l.email)
+            : leads;
 
-  const eventTotal = eventBreakdown.reduce((s, r) => s + r._count._all, 0) || 1;
+  // Top stats
+  const totalLeads = leads.length;
+  const withEmail = leads.filter((l) => !!l.email).length;
+  const engaged = leads.filter((l) => l.score >= 3).length;
+  const hot = leads.filter((l) => l.score >= 20).length;
 
-  const statCards = [
-    { label: "Total Submissions", value: totalSubmissions, icon: "📋" },
-    { label: "Demos Active", value: demosActive, icon: "🟢" },
-    { label: "CTA Clicks", value: ctaClicks, icon: "🖱️" },
-    { label: "Leads Captured", value: leadsCaptured, icon: "📧" },
-  ];
+  const filterLink = (f: string, label: string, active: boolean) =>
+    `<a href="/admin?secret=${secret}${f ? `&filter=${f}` : ""}" style="padding:6px 14px;border-radius:20px;font-size:13px;font-weight:500;text-decoration:none;${active ? "background:#ff6b35;color:white;" : "background:rgba(255,255,255,0.05);color:#9ca3af;"}">${label}</a>`;
 
   return (
     <main className="mx-auto max-w-7xl px-6 py-8">
-      {/* Top Stats */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        {statCards.map((card) => (
+      {/* Header */}
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Leads</h1>
+          <p className="mt-1 text-sm text-gray-500">Everyone who submitted their store for a demo</p>
+        </div>
+        <div className="text-sm text-gray-500">
+          {filtered.length} of {totalLeads} leads
+        </div>
+      </div>
+
+      {/* Stat Cards */}
+      <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
+        {[
+          { label: "Total Leads", value: totalLeads, icon: "👥", sub: "all submissions" },
+          { label: "Have Email", value: withEmail, icon: "📧", sub: "contactable" },
+          { label: "Engaged", value: engaged, icon: "⚡", sub: "opened widget" },
+          { label: "Hot Leads", value: hot, icon: "🔥", sub: "clicked CTA" },
+        ].map((card) => (
           <div
             key={card.label}
-            className="rounded-xl border border-white/[0.08] bg-[#1a1a1a]/80 px-6 py-5"
+            className="rounded-xl border border-white/[0.08] bg-[#1a1a1a]/80 px-5 py-4"
           >
-            <div className="text-3xl font-bold tabular-nums">{card.value}</div>
-            <div className="mt-1 flex items-center gap-2 text-sm text-gray-400">
-              <span>{card.icon}</span>
-              {card.label}
+            <div className="flex items-start justify-between">
+              <div className="text-3xl font-bold tabular-nums">{card.value}</div>
+              <span className="text-2xl">{card.icon}</span>
             </div>
+            <div className="mt-2 text-sm font-medium text-gray-300">{card.label}</div>
+            <div className="text-xs text-gray-600">{card.sub}</div>
           </div>
         ))}
       </div>
 
-      {/* Conversion Funnel */}
-      <section className="mt-8">
-        <h2 className="mb-4 text-lg font-semibold text-gray-200">Conversion Funnel</h2>
-        <div className="rounded-xl border border-white/[0.08] bg-[#1a1a1a]/80 p-6">
-          <div className="flex items-end gap-3">
-            {FUNNEL_STEPS.map((step, i) => {
-              const count = funnel[step.key] ?? 0;
-              const pct = Math.max(8, (count / funnelMax) * 100);
-              return (
-                <div key={step.key} className="flex flex-1 flex-col items-center gap-2">
-                  <span className="text-xl font-bold tabular-nums">{count}</span>
-                  <div className="w-full overflow-hidden rounded-lg bg-white/[0.05]" style={{ height: 120 }}>
-                    <div
-                      className="w-full rounded-lg bg-orange-500/70 transition-all"
-                      style={{ height: `${pct}%`, marginTop: `${100 - pct}%` }}
-                    />
-                  </div>
-                  <span className="text-center text-xs text-gray-500">{step.label}</span>
-                  {i < FUNNEL_STEPS.length - 1 && (
-                    <span className="absolute text-gray-600">→</span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
+      {/* Filters */}
+      <div className="mb-4 flex items-center gap-2 flex-wrap">
+        {[
+          { f: "", label: "All" },
+          { f: "hot", label: "🔥 Hot" },
+          { f: "warm", label: "⚡ Warm" },
+          { f: "engaged", label: "👀 Engaged" },
+          { f: "email", label: "📧 Has Email" },
+        ].map(({ f, label }) => (
+          <Link
+            key={f}
+            href={`/admin?secret=${secret}${f ? `&filter=${f}` : ""}`}
+            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+              filter === f || (!filter && !f)
+                ? "bg-orange-500 text-white"
+                : "bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white"
+            }`}
+          >
+            {label}
+          </Link>
+        ))}
+      </div>
 
-      {/* Recent Submissions */}
-      <section className="mt-8">
-        <h2 className="mb-4 text-lg font-semibold text-gray-200">Recent Submissions</h2>
-        <div className="overflow-x-auto rounded-xl border border-white/[0.08] bg-[#1a1a1a]/80">
-          {recentJobs.length === 0 ? (
-            <div className="px-6 py-12 text-center text-gray-500">No submissions yet</div>
-          ) : (
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-white/[0.06] text-xs uppercase tracking-wider text-gray-500">
-                <tr>
-                  <th className="px-5 py-3">Domain</th>
-                  <th className="px-5 py-3">Email</th>
-                  <th className="px-5 py-3">Status</th>
-                  <th className="px-5 py-3">Submitted</th>
-                  <th className="px-5 py-3 text-right">Events</th>
-                  <th className="px-5 py-3 text-center">CTA</th>
-                  <th className="px-5 py-3 text-right">Actions</th>
+      {/* Leads Table */}
+      <div className="overflow-x-auto rounded-xl border border-white/[0.08] bg-[#1a1a1a]/80">
+        {filtered.length === 0 ? (
+          <div className="px-6 py-16 text-center text-gray-500">No leads yet</div>
+        ) : (
+          <table className="w-full text-left text-sm">
+            <thead className="border-b border-white/[0.06] text-xs uppercase tracking-wider text-gray-600">
+              <tr>
+                <th className="px-5 py-3">Lead</th>
+                <th className="px-5 py-3">Heat</th>
+                <th className="px-5 py-3 text-center">Widget</th>
+                <th className="px-5 py-3 text-center">Messages</th>
+                <th className="px-5 py-3 text-center">CTA</th>
+                <th className="px-5 py-3">Last Activity</th>
+                <th className="px-5 py-3">Submitted</th>
+                <th className="px-5 py-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/[0.04]">
+              {filtered.map((lead) => (
+                <tr key={lead.id} className="group transition-colors hover:bg-white/[0.03]">
+                  {/* Lead identity */}
+                  <td className="px-5 py-4">
+                    <div className="font-semibold text-white">{lead.normalizedDomain}</div>
+                    {lead.email ? (
+                      <div className="mt-0.5 text-xs text-gray-400">{lead.email}</div>
+                    ) : (
+                      <div className="mt-0.5 text-xs text-gray-700">no email</div>
+                    )}
+                  </td>
+
+                  {/* Heat */}
+                  <td className="px-5 py-4">
+                    <div className="flex items-center gap-2">
+                      <span className={`inline-block h-2 w-2 rounded-full ${lead.heat.dot}`} />
+                      <span className={`text-sm font-medium ${lead.heat.color}`}>
+                        {lead.heat.label}
+                      </span>
+                    </div>
+                    <div className="mt-0.5 text-xs text-gray-700">{lead.score} pts</div>
+                  </td>
+
+                  {/* Widget opened */}
+                  <td className="px-5 py-4 text-center text-lg">
+                    {lead.widgetOpened ? "✅" : <span className="text-gray-700">—</span>}
+                  </td>
+
+                  {/* Messages */}
+                  <td className="px-5 py-4 text-center">
+                    {lead.messagesCount > 0 ? (
+                      <span className="font-semibold text-purple-400">{lead.messagesCount}</span>
+                    ) : (
+                      <span className="text-gray-700">—</span>
+                    )}
+                  </td>
+
+                  {/* CTA clicked */}
+                  <td className="px-5 py-4 text-center text-lg">
+                    {lead.ctaClicked ? (
+                      <span title="Clicked Book a Demo">🔥</span>
+                    ) : (
+                      <span className="text-gray-700">—</span>
+                    )}
+                  </td>
+
+                  {/* Last activity */}
+                  <td className="px-5 py-4 text-sm text-gray-400">
+                    {timeAgo(lead.lastActivity)}
+                  </td>
+
+                  {/* Submitted */}
+                  <td className="px-5 py-4 text-xs text-gray-600">
+                    {timeAgo(lead.createdAt)}
+                  </td>
+
+                  {/* Actions */}
+                  <td className="px-5 py-4 text-right">
+                    <div className="flex items-center justify-end gap-3 opacity-0 transition-opacity group-hover:opacity-100">
+                      <Link
+                        href={`/admin/jobs/${lead.id}?secret=${secret}`}
+                        className="text-xs text-orange-400 hover:text-orange-300"
+                      >
+                        Details
+                      </Link>
+                      <a
+                        href={`/demo/${lead.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-emerald-400 hover:text-emerald-300"
+                      >
+                        Preview ↗
+                      </a>
+                      {lead.email && (
+                        <a
+                          href={`mailto:${lead.email}?subject=Your ZapSight Demo is Ready&body=Hi there! I noticed you checked out the Shop Pilot demo for ${lead.normalizedDomain}. I'd love to show you what it looks like with your real inventory — book a quick call: https://calendly.com/blake-zapsight/30min`}
+                          className="text-xs text-blue-400 hover:text-blue-300"
+                        >
+                          Email ↗
+                        </a>
+                      )}
+                    </div>
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-white/[0.04]">
-                {recentJobs.map((job) => (
-                  <tr key={job.id} className="transition-colors hover:bg-white/[0.03]">
-                    <td className="px-5 py-3 font-medium">{job.normalizedDomain}</td>
-                    <td className="px-5 py-3 text-gray-400">{job.email ?? "—"}</td>
-                    <td className="px-5 py-3">
-                      <span
-                        className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_BADGE[job.status] ?? "bg-gray-700 text-gray-300"}`}
-                      >
-                        {job.status}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3 text-gray-500">{timeAgo(job.createdAt)}</td>
-                    <td className="px-5 py-3 text-right tabular-nums text-gray-400">
-                      {job._count.events || "—"}
-                    </td>
-                    <td className="px-5 py-3 text-center">
-                      {job.events.length > 0 ? (
-                        <span className="text-emerald-400">✅</span>
-                      ) : (
-                        <span className="text-gray-600">—</span>
-                      )}
-                    </td>
-                    <td className="px-5 py-3 text-right">
-                      <div className="flex items-center justify-end gap-3">
-                        <Link
-                          href={`/admin/jobs/${job.id}?secret=${secret}`}
-                          className="text-xs text-orange-400 hover:text-orange-300"
-                        >
-                          View Details
-                        </Link>
-                        {(job.status === "PREVIEW_READY" || job.status === "READY") && (
-                          <a
-                            href={`/p/${job.id}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-emerald-400 hover:text-emerald-300"
-                          >
-                            Preview ↗
-                          </a>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </section>
-
-      <div className="mt-8 grid gap-8 lg:grid-cols-2">
-        {/* Widget Engagement */}
-        <section>
-          <h2 className="mb-4 text-lg font-semibold text-gray-200">Widget Engagement</h2>
-          <div className="rounded-xl border border-white/[0.08] bg-[#1a1a1a]/80">
-            <div className="border-b border-white/[0.06] px-5 py-3">
-              <span className="text-sm text-gray-400">
-                Total events: <span className="font-medium text-white">{totalEvents}</span>
-              </span>
-            </div>
-            {eventBreakdown.length === 0 ? (
-              <div className="px-5 py-8 text-center text-gray-500">No events yet</div>
-            ) : (
-              <table className="w-full text-left text-sm">
-                <thead className="border-b border-white/[0.06] text-xs uppercase tracking-wider text-gray-500">
-                  <tr>
-                    <th className="px-5 py-2.5">Event Type</th>
-                    <th className="px-5 py-2.5 text-right">Count</th>
-                    <th className="px-5 py-2.5 text-right">% of Total</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/[0.04]">
-                  {eventBreakdown.map((row) => (
-                    <tr key={row.eventName} className="hover:bg-white/[0.03]">
-                      <td className="px-5 py-2.5">
-                        <span
-                          className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${EVENT_BADGE[row.eventName] ?? "bg-gray-700 text-gray-300"}`}
-                        >
-                          {row.eventName}
-                        </span>
-                      </td>
-                      <td className="px-5 py-2.5 text-right tabular-nums">{row._count._all}</td>
-                      <td className="px-5 py-2.5 text-right tabular-nums text-gray-400">
-                        {((row._count._all / eventTotal) * 100).toFixed(1)}%
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </section>
-
-        {/* Live Recent Events */}
-        <section>
-          <h2 className="mb-4 text-lg font-semibold text-gray-200">Recent Events</h2>
-          <div className="rounded-xl border border-white/[0.08] bg-[#1a1a1a]/80">
-            {recentEvents.length === 0 ? (
-              <div className="px-5 py-8 text-center text-gray-500">No events yet</div>
-            ) : (
-              <div className="divide-y divide-white/[0.04]">
-                {recentEvents.map((event) => (
-                  <div key={event.id} className="px-5 py-3 hover:bg-white/[0.03]">
-                    <div className="flex items-center justify-between gap-3">
-                      <span
-                        className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${EVENT_BADGE[event.eventName] ?? "bg-gray-700 text-gray-300"}`}
-                      >
-                        {event.eventName}
-                      </span>
-                      <span className="text-xs text-gray-500">{timeAgo(event.createdAt)}</span>
-                    </div>
-                    <div className="mt-1 flex items-center justify-between">
-                      <span className="text-sm text-gray-300">{event.previewJob.normalizedDomain}</span>
-                      {event.eventPayload && (
-                        <span className="max-w-[200px] truncate text-xs text-gray-600">
-                          {JSON.stringify(event.eventPayload).slice(0, 80)}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </main>
   );
