@@ -14,6 +14,7 @@ export function injectWidget(html: string, options: InjectionOptions): string {
 <div id="zapsight-widget-root"></div>
 <script>
   window.__ZAPSIGHT_PREVIEW_CONFIG__ = ${configJson};
+  window.__ZAPSIGHT_API_BASE__ = '${apiBaseUrl}';
 </script>
 <script src="${apiBaseUrl}/api/widget/preview-bundle.js"></script>
 <style>
@@ -492,7 +493,7 @@ export function injectWidget(html: string, options: InjectionOptions): string {
     document.getElementById('zs-messages').appendChild(typingEl);
     document.getElementById('zs-messages').scrollTop = document.getElementById('zs-messages').scrollHeight;
 
-    fetch('/api/widget/chat', {
+    fetch((window.__ZAPSIGHT_API_BASE__ || '') + '/api/widget/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -557,7 +558,7 @@ export function injectWidget(html: string, options: InjectionOptions): string {
   function logEvent(name, payload) {
     var previewJobId = config.previewJobId;
     if (!previewJobId) return;
-    fetch('/api/preview-events', {
+    fetch((window.__ZAPSIGHT_API_BASE__ || '') + '/api/preview-events', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ previewJobId: previewJobId, eventName: name, eventPayload: payload || {} })
