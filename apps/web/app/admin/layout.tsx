@@ -11,7 +11,7 @@ export default async function AdminLayout({
   const auth = cookieStore.get("admin_auth");
 
   if (!auth || auth.value !== process.env.ADMIN_PASSWORD) {
-    redirect("/admin/login");
+    redirect("/admin-login");
   }
 
   return (
