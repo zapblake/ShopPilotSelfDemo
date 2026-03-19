@@ -4,8 +4,7 @@ nixPkgs = ["nodejs_22"]
 [phases.install]
 cmds = [
   "npm install -g pnpm@9",
-  "pnpm install --frozen-lockfile",
-  "pnpm exec prisma generate --schema=packages/db/prisma/schema.prisma"
+  "pnpm install --frozen-lockfile"
 ]
 
 [phases.build]

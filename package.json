@@ -5,7 +5,8 @@
     "dev": "turbo dev",
     "build": "turbo build",
     "lint": "turbo lint",
-    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\""
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "postinstall": "prisma generate --schema=packages/db/prisma/schema.prisma"
   },
   "devDependencies": {
     "eslint": "^9.17.0",
