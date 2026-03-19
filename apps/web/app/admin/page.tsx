@@ -25,19 +25,9 @@ function heatLabel(score: number): { label: string; color: string; dot: string }
 export default async function AdminCRM({
   searchParams,
 }: {
-  searchParams: Promise<{ secret?: string; filter?: string }>;
+  searchParams: Promise<{ filter?: string }>;
 }) {
-  const { secret, filter } = await searchParams;
-
-  if (!process.env.ADMIN_SECRET || secret !== process.env.ADMIN_SECRET) {
-    return (
-      <main className="flex min-h-[80vh] items-center justify-center">
-        <div className="rounded-lg border border-red-800/50 bg-red-950/50 px-8 py-6 text-red-400">
-          401 — Unauthorized
-        </div>
-      </main>
-    );
-  }
+  const { filter } = await searchParams;
 
   const jobs = await prisma.previewJob.findMany({
     orderBy: { createdAt: "desc" },
@@ -74,9 +64,6 @@ export default async function AdminCRM({
   const withEmail = leads.filter((l) => !!l.email).length;
   const engaged = leads.filter((l) => l.score >= 3).length;
   const hot = leads.filter((l) => l.score >= 20).length;
-
-  const filterLink = (f: string, label: string, active: boolean) =>
-    `<a href="/admin?secret=${secret}${f ? `&filter=${f}` : ""}" style="padding:6px 14px;border-radius:20px;font-size:13px;font-weight:500;text-decoration:none;${active ? "background:#ff6b35;color:white;" : "background:rgba(255,255,255,0.05);color:#9ca3af;"}">${label}</a>`;
 
   return (
     <main className="mx-auto max-w-7xl px-6 py-8">
@@ -124,7 +111,7 @@ export default async function AdminCRM({
         ].map(({ f, label }) => (
           <Link
             key={f}
-            href={`/admin?secret=${secret}${f ? `&filter=${f}` : ""}`}
+            href={`/admin${f ? `?filter=${f}` : ""}`}
             className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
               filter === f || (!filter && !f)
                 ? "bg-orange-500 text-white"
@@ -215,7 +202,7 @@ export default async function AdminCRM({
                   <td className="px-5 py-4 text-right">
                     <div className="flex items-center justify-end gap-3 opacity-0 transition-opacity group-hover:opacity-100">
                       <Link
-                        href={`/admin/jobs/${lead.id}?secret=${secret}`}
+                        href={`/admin/jobs/${lead.id}`}
                         className="text-xs text-orange-400 hover:text-orange-300"
                       >
                         Details

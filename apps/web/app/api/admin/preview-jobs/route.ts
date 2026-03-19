@@ -3,10 +3,9 @@ import { successResponse, errorResponse } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
-  const secret = request.nextUrl.searchParams.get("secret");
-
-  if (!process.env.ADMIN_SECRET || secret !== process.env.ADMIN_SECRET) {
-    return errorResponse("UNAUTHORIZED", "Invalid or missing secret", 401);
+  const cookie = request.cookies.get("admin_auth");
+  if (!cookie || cookie.value !== process.env.ADMIN_PASSWORD) {
+    return errorResponse("UNAUTHORIZED", "Invalid or missing auth", 401);
   }
 
   const jobs = await prisma.previewJob.findMany({

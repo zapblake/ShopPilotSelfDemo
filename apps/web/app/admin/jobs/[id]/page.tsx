@@ -36,23 +36,9 @@ const EVENT_BADGE: Record<string, string> = {
 
 export default async function JobDetailPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ secret?: string }>;
 }) {
-  const { secret } = await searchParams;
-
-  if (!process.env.ADMIN_SECRET || secret !== process.env.ADMIN_SECRET) {
-    return (
-      <main className="flex min-h-[80vh] items-center justify-center">
-        <div className="rounded-lg border border-red-800/50 bg-red-950/50 px-8 py-6 text-red-400">
-          401 — Unauthorized
-        </div>
-      </main>
-    );
-  }
-
   const { id } = await params;
 
   const job = await prisma.previewJob.findUnique({
@@ -76,7 +62,7 @@ export default async function JobDetailPage({
     <main className="mx-auto max-w-5xl px-6 py-8">
       {/* Back Link */}
       <Link
-        href={`/admin?secret=${secret}`}
+        href="/admin"
         className="mb-6 inline-block text-sm text-gray-500 hover:text-gray-300"
       >
         ← Back to Dashboard

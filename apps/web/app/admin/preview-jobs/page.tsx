@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
 
 interface JobSummary {
   id: string;
@@ -31,20 +30,12 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 function AdminPreviewJobsContent() {
-  const searchParams = useSearchParams();
-  const secret = searchParams.get("secret");
   const [jobs, setJobs] = useState<JobSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!secret) {
-      setError("Missing secret parameter");
-      setLoading(false);
-      return;
-    }
-
-    fetch(`/api/admin/preview-jobs?secret=${encodeURIComponent(secret)}`)
+    fetch("/api/admin/preview-jobs")
       .then((res) => res.json())
       .then((data) => {
         if (!data.success) {
@@ -55,7 +46,7 @@ function AdminPreviewJobsContent() {
       })
       .catch(() => setError("Failed to load jobs"))
       .finally(() => setLoading(false));
-  }, [secret]);
+  }, []);
 
   if (loading) {
     return (
