@@ -533,23 +533,12 @@ export function injectWidget(html: string, options: InjectionOptions): string {
     if (e.key === 'Enter') sendMessage();
   });
 
-  // Demo product images — royalty-free placeholder furniture/mattress shots
-  var demoImages = [
-    'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=300&h=200&fit=crop',
-    'https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?w=300&h=200&fit=crop',
-    'https://images.unsplash.com/photo-1616594039964-ae9021a400a0?w=300&h=200&fit=crop',
-    'https://images.unsplash.com/photo-1631679706909-1844bbd07221?w=300&h=200&fit=crop',
-    'https://images.unsplash.com/photo-1540574163026-643ea20ade25?w=300&h=200&fit=crop',
-    'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=300&h=200&fit=crop',
-  ];
-
   function appendProductCards(products) {
     var msgs = document.getElementById('zs-messages');
     var wrap = document.createElement('div');
     wrap.style.cssText = 'display:flex;flex-direction:column;gap:10px;margin-top:4px;width:100%;';
 
-    products.slice(0, 3).forEach(function(p, i) {
-      var imgUrl = demoImages[i % demoImages.length];
+    products.slice(0, 3).forEach(function(p) {
       var card = document.createElement('div');
       card.style.cssText = 'background:#1e1a2e;border:1px solid rgba(255,255,255,0.08);border-radius:12px;overflow:hidden;cursor:pointer;transition:border-color 0.2s;';
       card.onmouseenter = function() { card.style.borderColor = 'rgba(139,92,246,0.5)'; };
@@ -562,8 +551,9 @@ export function injectWidget(html: string, options: InjectionOptions): string {
       var price = (Math.floor(Math.random() * 160) * 5 + 199).toFixed(2);
 
       card.innerHTML =
-        '<div style="position:relative;">' +
-          '<img src="' + imgUrl + '" style="width:100%;height:140px;object-fit:cover;display:block;" />' +
+        '<div style="position:relative;width:100%;height:120px;background:linear-gradient(135deg,#2d2040,#1a1a2e);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;">' +
+          '<div style="font-size:28px;opacity:0.25;">🖼️</div>' +
+          '<div style="color:rgba(255,255,255,0.3);font-size:11px;font-style:italic;letter-spacing:0.5px;">your product photo</div>' +
           badge +
         '</div>' +
         '<div style="padding:12px;">' +
