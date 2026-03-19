@@ -7,7 +7,7 @@
   "scripts": {
     "build": "echo skip",
     "dev": "tsc --watch",
-    "start": "prisma generate --schema=../../packages/db/prisma/schema.prisma && node src/run-worker.js"
+    "start": "node src/run-worker.js"
   },
   "dependencies": {
     "@prisma/client": "^6.1.0",
@@ -16,10 +16,11 @@
     "@zapsight/storage": "workspace:*",
     "bullmq": "^5.30.1",
     "ioredis": "^5.4.2",
+    "pg": "^8.20.0",
     "pino": "^9.6.0"
   },
   "devDependencies": {
-    "typescript": "^5.7.2",
-    "ts-node": "^10.9.2"
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2"
   }
 }
