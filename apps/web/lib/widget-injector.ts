@@ -51,24 +51,33 @@ export function injectWidget(html: string, options: InjectionOptions): string {
     100% { box-shadow: -2px 0 12px rgba(79,70,229,0.4), 0 0 0 0 rgba(79,70,229,0); }
   }
   #zapsight-widget-tab {
-    position: fixed;
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 99999;
-    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-    color: white;
-    border: none;
-    border-radius: 12px 0 0 12px;
-    padding: 16px 8px;
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    box-shadow: -2px 0 12px rgba(79,70,229,0.4);
-    transition: transform 0.3s ease, opacity 0.3s ease, right 0.3s ease;
-    animation: zs-tab-pulse 2s ease-in-out 1s 3;
+    all: unset;
+    position: fixed !important;
+    right: 0 !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    z-index: 99999 !important;
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 12px 0 0 12px !important;
+    padding: 16px 8px !important;
+    cursor: pointer !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 8px !important;
+    box-shadow: -2px 0 12px rgba(79,70,229,0.4) !important;
+    transition: opacity 0.3s ease, right 0.3s ease !important;
+    animation: zs-tab-pulse 2s ease-in-out 1s 3 !important;
+    box-sizing: border-box !important;
+    width: auto !important;
+    height: auto !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: none !important;
+    text-transform: none !important;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif !important;
   }
   #zapsight-widget-tab:hover {
     background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
@@ -141,25 +150,43 @@ export function injectWidget(html: string, options: InjectionOptions): string {
     align-items: center;
   }
   .zs-restart-btn {
-    background: rgba(220,38,38,0.15);
-    border: 1px solid rgba(220,38,38,0.3);
-    color: #f87171;
-    border-radius: 20px;
-    padding: 5px 12px;
-    font-size: 12px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 4px;
+    all: unset;
+    background: rgba(220,38,38,0.15) !important;
+    border: 1px solid rgba(220,38,38,0.3) !important;
+    color: #f87171 !important;
+    border-radius: 20px !important;
+    padding: 5px 12px !important;
+    font-size: 12px !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    line-height: 1.4 !important;
+    box-sizing: border-box !important;
+    width: auto !important;
+    height: auto !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: none !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif !important;
   }
   .zs-close-btn {
-    background: none;
-    border: none;
-    color: rgba(255,255,255,0.5);
-    cursor: pointer;
-    font-size: 20px;
-    padding: 2px 6px;
-    line-height: 1;
+    all: unset;
+    background: none !important;
+    border: none !important;
+    color: rgba(255,255,255,0.5) !important;
+    cursor: pointer !important;
+    font-size: 20px !important;
+    padding: 2px 6px !important;
+    line-height: 1 !important;
+    box-sizing: border-box !important;
+    width: auto !important;
+    height: auto !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: none !important;
   }
   .zs-greeting {
     padding: 40px 24px 20px;
@@ -228,25 +255,33 @@ export function injectWidget(html: string, options: InjectionOptions): string {
     gap: 8px;
   }
   .zs-chip {
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 12px;
-    padding: 10px 8px;
-    cursor: pointer;
-    color: white;
-    font-size: 12px;
-    line-height: 1.4;
-    text-align: left;
-    transition: background 0.15s;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+    all: unset;
+    background: rgba(255,255,255,0.06) !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
+    border-radius: 12px !important;
+    padding: 10px 8px !important;
+    cursor: pointer !important;
+    color: white !important;
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+    text-align: left !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+    box-sizing: border-box !important;
+    width: auto !important;
+    height: auto !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: none !important;
+    text-transform: none !important;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif !important;
   }
   .zs-chip:hover {
-    background: rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.1) !important;
   }
   .zs-chip-icon {
-    font-size: 18px;
+    font-size: 18px !important;
   }
   .zs-input-row {
     padding: 14px 16px;
@@ -270,21 +305,25 @@ export function injectWidget(html: string, options: InjectionOptions): string {
     color: rgba(255,255,255,0.3);
   }
   .zs-send {
-    background: #4f46e5;
-    border: none;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    flex-shrink: 0;
-    transition: background 0.15s;
+    all: unset;
+    background: #4f46e5 !important;
+    border: none !important;
+    border-radius: 50% !important;
+    width: 40px !important;
+    height: 40px !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 16px !important;
+    flex-shrink: 0 !important;
+    box-sizing: border-box !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    text-transform: none !important;
   }
   .zs-send:hover {
-    background: #4338ca;
+    background: #4338ca !important;
   }
   .zs-domain-pill {
     text-align: center;
@@ -481,6 +520,29 @@ export function injectWidget(html: string, options: InjectionOptions): string {
   }
 
   logEvent('widget_loaded', { pageType: config.pageContext ? config.pageContext.pageType : 'unknown' });
+
+  // --- Preview notice bar (shown on all real previews) ---
+  var noticeDomain = config.normalizedDomain || (config.storeContext && config.storeContext.domain) || '';
+  if (noticeDomain && !document.getElementById('zs-preview-notice')) {
+    var notice = document.createElement('div');
+    notice.id = 'zs-preview-notice';
+    notice.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99990;background:linear-gradient(90deg,#1a1a1a,#1e1a2e);color:rgba(255,255,255,0.85);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.08);gap:16px;flex-wrap:wrap;';
+    notice.innerHTML =
+      '<span style="display:flex;align-items:center;gap:8px;flex:1;min-width:200px;">' +
+        '<span style="font-size:16px;">⚡</span>' +
+        '<span>This is a <strong style="color:#ff6b35;">ZapSight preview</strong> of <strong style="color:white">' + escapeHtml(noticeDomain) + '</strong> — showing how Shop Pilot would look on your real store.</span>' +
+      '</span>' +
+      '<span style="display:flex;align-items:center;gap:10px;flex-shrink:0;">' +
+        '<a href="https://calendly.com/blake-zapsight/30min" target="_blank" style="display:inline-block;background:linear-gradient(135deg,#ff6b35,#ff3d7f);color:white;font-weight:700;font-size:12px;padding:7px 16px;border-radius:20px;text-decoration:none;white-space:nowrap;">Book a Custom Demo →</a>' +
+        '<button id="zs-notice-close" style="all:unset;color:rgba(255,255,255,0.35);cursor:pointer;font-size:18px;padding:0 4px;line-height:1;">×</button>' +
+      '</span>';
+    document.body.prepend(notice);
+    document.body.style.paddingTop = '53px';
+    document.getElementById('zs-notice-close').addEventListener('click', function() {
+      notice.style.display = 'none';
+      document.body.style.paddingTop = '0';
+    });
+  }
 
   // Kill popups/modals baked into scraped HTML
   function killPopups() {
