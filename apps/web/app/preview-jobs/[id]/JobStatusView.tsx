@@ -281,7 +281,7 @@ export function JobStatusView({ jobId }: { jobId: string }) {
       {isReady && (
         <div style={{ textAlign: "center", marginBottom: "24px" }}>
           <a
-            href={`https://${job.normalizedDomain}.zapsight.us`}
+            href={`https://zapsight.us/p/${job.id}`}
             target="_blank"
             rel="noopener noreferrer"
             style={{
