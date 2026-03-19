@@ -6,7 +6,8 @@
   "types": "./src/index.ts",
   "scripts": {
     "build": "echo skip",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch",
+    "start": "ts-node src/run-worker.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.1.0",
@@ -18,6 +19,7 @@
     "pino": "^9.6.0"
   },
   "devDependencies": {
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "ts-node": "^10.9.2"
   }
 }
