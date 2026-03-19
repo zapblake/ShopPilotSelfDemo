@@ -60,8 +60,12 @@ export async function POST(request: NextRequest) {
 
     const normalized = normalizeUrl(url);
     if (!normalized) {
-      if (isFormSubmission) return NextResponse.redirect(new URL("/?error=invalid_url", request.url), 303);
-      return errorResponse("VALIDATION_ERROR", "Invalid URL format", 400);
+      // Check if it looks like someone entered a zapsight URL
+      const lowerUrl = url.toLowerCase();
+      const isOwnDomain = lowerUrl.includes("zapsight.com") || lowerUrl.includes("zapsight.us");
+      const errorParam = isOwnDomain ? "own_domain" : "invalid_url";
+      if (isFormSubmission) return NextResponse.redirect(new URL(`/?error=${errorParam}`, request.url), 303);
+      return errorResponse("VALIDATION_ERROR", isOwnDomain ? "Please enter your store URL, not a ZapSight URL" : "Invalid URL format", 400);
     }
 
     const job = await prisma.previewJob.create({

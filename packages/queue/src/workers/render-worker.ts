@@ -68,11 +68,16 @@ async function processNextRenderJob(): Promise<boolean> {
           data: { renderStatus: "RENDERING", renderStartedAt: new Date() },
         });
 
-        const result = await renderer.render({
+        const RENDER_TIMEOUT_MS = 90_000;
+        const renderPromise = renderer.render({
           url: renderedPage.sourceUrl,
           jobId: previewJobId,
           pageType: renderedPage.previewPath,
         });
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Render timeout after 90s")), RENDER_TIMEOUT_MS)
+        );
+        const result = await Promise.race([renderPromise, timeoutPromise]);
 
         const htmlKey = `jobs/${previewJobId}/pages/${renderedPage.id}/index.html`;
         const screenshotKey = `jobs/${previewJobId}/pages/${renderedPage.id}/screenshot.png`;

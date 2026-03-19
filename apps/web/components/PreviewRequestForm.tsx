@@ -15,6 +15,14 @@ export function PreviewRequestForm() {
     setSubmitting(true);
     setError(null);
 
+    // Client-side guard: don't let them submit a ZapSight URL
+    const lowerUrl = url.toLowerCase().replace(/^https?:\/\//, "");
+    if (lowerUrl.includes("zapsight.com") || lowerUrl.includes("zapsight.us")) {
+      setError("That's our URL 😄 Enter your store's URL instead — like yourstore.com");
+      setSubmitting(false);
+      return;
+    }
+
     try {
       const res = await fetch("/api/preview-jobs", {
         method: "POST",
