@@ -14,7 +14,16 @@ export class PlaywrightRendererProvider implements RendererProvider {
     const { chromium } = await import("playwright");
 
     const headless = process.env.PLAYWRIGHT_HEADLESS !== "false";
-    const browser = await chromium.launch({ headless });
+    const browser = await chromium.launch({
+      headless,
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+        "--single-process",
+      ],
+    });
 
     try {
       const context = await browser.newContext({
