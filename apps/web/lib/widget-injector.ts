@@ -500,6 +500,7 @@ export function injectWidget(html: string, options: InjectionOptions): string {
         message: text,
         history: conversationHistory,
         storeContext: config.storeContext,
+        pageContext: config.pageContext,
       }),
     })
     .then(function(r) { return r.json(); })
