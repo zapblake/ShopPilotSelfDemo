@@ -1,16 +1,48 @@
-# cache-bust: 2026-03-19-04
+# cache-bust: 2026-03-19-05
 
 [phases.setup]
-nixPkgs = ["nodejs_22"]
+nixPkgs = [
+  "nodejs_22",
+  "chromium",
+  "nss",
+  "nspr",
+  "atk",
+  "at-spi2-atk",
+  "xorg.libX11",
+  "xorg.libXcomposite",
+  "xorg.libXcursor",
+  "xorg.libXdamage",
+  "xorg.libXext",
+  "xorg.libXfixes",
+  "xorg.libXi",
+  "xorg.libXrandr",
+  "xorg.libXrender",
+  "xorg.libXtst",
+  "xorg.libxcb",
+  "libxkbcommon",
+  "mesa",
+  "expat",
+  "pango",
+  "cairo",
+  "glib",
+  "dbus",
+  "cups",
+  "alsa-lib",
+  "libdrm",
+  "gbm"
+]
 
 [phases.install]
 cmds = [
   "npm install -g pnpm@9",
-  "pnpm install --frozen-lockfile"
+  "pnpm install --frozen-lockfile",
+  "pnpm --filter @zapsight/renderer exec playwright install chromium"
 ]
 
 [phases.build]
-cmds = ["echo 'build complete'"]
+cmds = [
+  "pnpm --filter @zapsight/db exec prisma generate"
+]
 
 [start]
 cmd = "pnpm --filter @zapsight/queue run start"
