@@ -176,7 +176,6 @@ export function JobStatusView({ jobId }: { jobId: string }) {
       {/* Logo */}
       <div style={{ textAlign: "center", marginBottom: "32px" }}>
         <div style={{ display: "inline-flex", alignItems: "center", gap: "12px" }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/favicon.png" alt="ZapSight" width={32} height={32} style={{ borderRadius: "7px" }} />
           <span style={{
             fontSize: "20px",

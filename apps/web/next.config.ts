@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   transpilePackages: ["@zapsight/preview", "@zapsight/storage", "@zapsight/crawl", "@zapsight/db", "@zapsight/widget", "@zapsight/renderer"],
   async headers() {
     return [

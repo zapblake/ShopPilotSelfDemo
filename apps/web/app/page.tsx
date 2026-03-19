@@ -6,7 +6,7 @@ export default function HomePage() {
   return (
     <main style={{
       minHeight: "100vh",
-      background: "#0a0a0a",
+      background: "#0a0a0f",
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
@@ -16,19 +16,56 @@ export default function HomePage() {
       position: "relative",
       overflow: "hidden",
     }}>
-      {/* Background glow blobs */}
+      {/* Background glow blobs — matches ZapSight brand site aesthetic */}
+
+      {/* Top-center green glow */}
       <div style={{
-        position: "absolute", top: "-20%", left: "50%", transform: "translateX(-50%)",
-        width: "800px", height: "500px",
-        background: "radial-gradient(ellipse at center, rgba(245,104,10,0.10) 0%, transparent 70%)",
+        position: "absolute", top: "-5%", left: "50%", transform: "translateX(-50%)",
+        width: "900px", height: "400px",
+        background: "radial-gradient(ellipse at center, rgba(30,100,50,0.28) 0%, transparent 70%)",
         pointerEvents: "none",
       }} />
+
+      {/* Bottom-wide orange/burnt sienna glow — the signature warmth */}
       <div style={{
-        position: "absolute", bottom: "-10%", right: "-10%",
-        width: "400px", height: "400px",
-        background: "radial-gradient(ellipse at center, rgba(201,69,13,0.07) 0%, transparent 70%)",
+        position: "absolute", bottom: "-10%", left: "50%", transform: "translateX(-50%)",
+        width: "1200px", height: "500px",
+        background: "radial-gradient(ellipse at center, rgba(196,74,21,0.40) 0%, transparent 65%)",
         pointerEvents: "none",
       }} />
+
+      {/* Bottom-left hot pink accent dot */}
+      <div style={{
+        position: "absolute", bottom: "20%", left: "2%",
+        width: "12px", height: "12px",
+        borderRadius: "50%",
+        background: "#e83060",
+        boxShadow: "0 0 20px 6px rgba(232,48,96,0.5)",
+        pointerEvents: "none",
+      }} />
+
+      {/* Scattered particles */}
+      {[
+        { top: "12%", left: "8%",  color: "#ff6a30", size: 3 },
+        { top: "18%", left: "72%", color: "#4a7bff", size: 2 },
+        { top: "32%", left: "88%", color: "#6b8fcc", size: 2 },
+        { top: "55%", left: "15%", color: "#e8852a", size: 3 },
+        { top: "65%", left: "80%", color: "#ff6a30", size: 2 },
+        { top: "8%",  left: "45%", color: "#4a7bff", size: 2 },
+        { top: "42%", left: "5%",  color: "#ff6a30", size: 2 },
+        { top: "75%", left: "60%", color: "#e8852a", size: 3 },
+      ].map((p, i) => (
+        <div key={i} style={{
+          position: "absolute",
+          top: p.top, left: p.left,
+          width: `${p.size}px`, height: `${p.size}px`,
+          borderRadius: "50%",
+          background: p.color,
+          boxShadow: `0 0 ${p.size * 3}px ${p.size}px ${p.color}88`,
+          opacity: 0.7,
+          pointerEvents: "none",
+        }} />
+      ))}
 
       {/* Logo / wordmark */}
       <div style={{ marginBottom: "48px", textAlign: "center" }}>
@@ -91,6 +128,8 @@ export default function HomePage() {
         borderRadius: "20px",
         padding: "32px",
         backdropFilter: "blur(12px)",
+        position: "relative",
+        zIndex: 1,
       }}>
         <Suspense fallback={null}>
           <PreviewRequestForm />
@@ -101,6 +140,7 @@ export default function HomePage() {
       <div style={{
         marginTop: "32px", display: "flex", alignItems: "center", gap: "8px",
         fontSize: "13px", color: "rgba(255,255,255,0.3)",
+        position: "relative", zIndex: 1,
       }}>
         <span>🔒</span>
         <span>No install · No credit card · Ready in ~30 seconds</span>
