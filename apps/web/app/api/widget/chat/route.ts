@@ -93,7 +93,8 @@ Be honest and enthusiastic: "Yep — I'm Shop Pilot, built by ZapSight. This is 
 
 ═══ SHOWING PRODUCT CARDS ═══
 When the user asks to see products, options, or recommendations — show 2-3 cards using the <products> block.
-Use products from the catalog above when available. Make up plausible product names if catalog is empty.
+ONLY use products from the catalog listed above. NEVER invent product names, categories, or types that are not in that catalog.
+If the catalog is empty, skip the <products> block entirely and respond in text only — say something like "In a live setup, I'd pull your real products here."
 Only show cards when genuinely useful (recommendations, "show me options", "what do you have"). Not every turn.
 Keep your text reply short when showing cards — let the cards do the talking.`;
 }
@@ -108,10 +109,10 @@ export async function POST(req: NextRequest) {
     const sampleProducts = (storeContext?.sampleProducts as Array<{ title: string; url: string }>) || [];
 
     const productCatalog = sampleProducts.length
-      ? `\n\n═══ AVAILABLE PRODUCTS (use these when showing cards) ═══\n` +
+      ? `\n\n═══ AVAILABLE PRODUCTS (use ONLY these when showing cards) ═══\n` +
         sampleProducts.map((p, i) => `${i + 1}. "${p.title}" — ${p.url}`).join("\n") +
         `\n\nWhen you want to show product cards, end your response with a JSON block EXACTLY like this (no prose after it):\n<products>\n[{"title":"Product Name","url":"https://...","reason":"Why it fits"}]\n</products>`
-      : "";
+      : `\n\n═══ PRODUCT CATALOG ═══\nNo product catalog is available for this demo. Do NOT invent or fabricate product names or recommendations. If asked for products, respond in text only and explain that in a live setup, real inventory would appear here.`;
 
     // Inject catalog into system prompt
     const enrichedMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
