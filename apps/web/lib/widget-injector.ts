@@ -3,10 +3,11 @@ import type { WidgetPreviewConfig } from "@/lib/widget-config-builder";
 export interface InjectionOptions {
   config: WidgetPreviewConfig;
   apiBaseUrl: string;
+  skipNoticeBanner?: boolean;
 }
 
 export function injectWidget(html: string, options: InjectionOptions): string {
-  const { config, apiBaseUrl } = options;
+  const { config, apiBaseUrl, skipNoticeBanner } = options;
   const configJson = JSON.stringify(config);
 
   const widgetHtml = `
@@ -552,9 +553,9 @@ export function injectWidget(html: string, options: InjectionOptions): string {
 
   logEvent('widget_loaded', { pageType: config.pageContext ? config.pageContext.pageType : 'unknown' });
 
-  // --- Preview notice bar (shown on all real previews) ---
+  // --- Preview notice bar (shown on all real previews, skipped if page has its own) ---
   var noticeDomain = config.normalizedDomain || (config.storeContext && config.storeContext.domain) || '';
-  if (noticeDomain && !document.getElementById('zs-preview-notice')) {
+  if (noticeDomain && !window.__ZS_SKIP_NOTICE_BANNER__ && !document.getElementById('zs-preview-notice')) {
     var notice = document.createElement('div');
     notice.id = 'zs-preview-notice';
     notice.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99990;background:linear-gradient(90deg,#1a1a1a,#1e1a2e);color:rgba(255,255,255,0.85);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.08);gap:16px;flex-wrap:wrap;';

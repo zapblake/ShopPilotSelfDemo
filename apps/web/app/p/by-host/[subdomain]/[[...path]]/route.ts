@@ -39,8 +39,9 @@ export async function GET(
   const storage = getStorageAdapter();
   const result = await getRenderedPageForPath(prisma, storage, jobId, previewPath);
 
-  // No rendered content (renders failed) → redirect to demo store fallback
-  if (!result) {
+  // No rendered content, or content is too short (bot-blocked skeleton) → redirect to demo store fallback
+  const MIN_CONTENT_LENGTH = 2000;
+  if (!result || result.html.length < MIN_CONTENT_LENGTH) {
     return NextResponse.redirect(`${appUrl}/demo/${jobId}`, 302);
   }
 

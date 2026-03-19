@@ -290,7 +290,8 @@ export default async function DemoPage({ params }: DemoPageProps) {
 </div>
 <script>document.body.style.paddingTop='53px';</script>`;
 
-  const withNotice = finalHtml.replace("<body>", "<body>" + noticeBanner) || finalHtml + noticeBanner;
+  const skipFlag = `<script>window.__ZS_SKIP_NOTICE_BANNER__ = true;</script>`;
+  const withNotice = finalHtml.replace("<body>", "<body>" + noticeBanner + skipFlag) || finalHtml + noticeBanner + skipFlag;
 
   return (
     <div

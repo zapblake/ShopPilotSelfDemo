@@ -4,6 +4,7 @@ import { getRenderedPageForPath, rewriteHtml } from "@zapsight/preview";
 import { buildWidgetConfig } from "@/lib/widget-config-builder";
 import { injectWidget } from "@/lib/widget-injector";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 interface PreviewPageProps {
   params: Promise<{ jobId: string; path?: string[] }>;
@@ -16,45 +17,9 @@ export default async function PreviewPage({ params }: PreviewPageProps) {
   const storage = getStorageAdapter();
   const result = await getRenderedPageForPath(prisma, storage, jobId, previewPath);
 
-  if (!result) {
-    return (
-      <html>
-        <body>
-          <div style={{
-            minHeight: "100vh",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-            background: "#f9fafb",
-          }}>
-            <div style={{ textAlign: "center", maxWidth: 400 }}>
-              <h1 style={{ fontSize: 24, fontWeight: 700, color: "#1a1a2e" }}>
-                Preview Not Ready
-              </h1>
-              <p style={{ color: "#6b7280", marginTop: 8 }}>
-                This preview page is not available yet. The render may still be in progress.
-              </p>
-              <Link
-                href={`/preview-jobs/${jobId}`}
-                style={{
-                  display: "inline-block",
-                  marginTop: 16,
-                  padding: "8px 20px",
-                  background: "#2563eb",
-                  color: "#fff",
-                  borderRadius: 6,
-                  textDecoration: "none",
-                  fontSize: 14,
-                }}
-              >
-                View Job Status
-              </Link>
-            </div>
-          </div>
-        </body>
-      </html>
-    );
+  const MIN_CONTENT_LENGTH = 2000;
+  if (!result || result.html.length < MIN_CONTENT_LENGTH) {
+    redirect(`/demo/${jobId}`);
   }
 
   // Look up the job to get the domain for rewriting
