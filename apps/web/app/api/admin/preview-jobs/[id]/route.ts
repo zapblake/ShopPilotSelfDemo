@@ -5,9 +5,9 @@ import { PrismaClient } from "@zapsight/db";
 const prisma = new PrismaClient();
 
 function isAuthed(): boolean {
-  // cookies() is sync in Next.js 15 app router
   const cookieStore = cookies() as unknown as { get: (name: string) => { value: string } | undefined };
-  return cookieStore.get("admin_auth")?.value === "authenticated";
+  const val = cookieStore.get("admin_auth")?.value;
+  return !!val && val === process.env.ADMIN_PASSWORD;
 }
 
 export async function DELETE(
