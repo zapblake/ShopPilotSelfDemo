@@ -27,6 +27,7 @@ export async function DELETE(
     await prisma.discoveredPage.deleteMany({ where: { crawlRun: { previewJobId: id } } });
     await prisma.crawlRun.deleteMany({ where: { previewJobId: id } });
     await prisma.widgetPreviewConfig.deleteMany({ where: { previewJobId: id } });
+    await prisma.previewHost.deleteMany({ where: { previewJobId: id } });
     await prisma.previewJob.delete({ where: { id } });
 
     return NextResponse.json({ success: true });
