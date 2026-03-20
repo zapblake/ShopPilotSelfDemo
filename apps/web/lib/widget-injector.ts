@@ -6,60 +6,60 @@ export interface InjectionOptions {
   skipNoticeBanner?: boolean;
 }
 
-/** Strip third-party chat/support widget script tags from scraped HTML before injection. */
+/** Strip third-party chat/support widget script tags and pre-rendered DOM elements from scraped HTML. */
 function stripCompetingScripts(html: string): string {
-  const patterns = [
-    // Birdeye
-    /birdeye\.com/i,
-    /birdeyechat/i,
-    /bewebchat/i,
-    // Podium
-    /podium\.com/i,
-    /podiumlibrary/i,
-    // Tidio
-    /tidio\.com/i,
-    /tidiochat/i,
-    // Intercom
-    /intercom\.io/i,
-    /intercomcdn/i,
-    // Drift
-    /drift\.com/i,
-    /js\.driftt/i,
-    // LiveChat
-    /livechat\.com/i,
-    /livechatinc/i,
-    // Zendesk
-    /zopim\.com/i,
-    /ekr\.zdassets/i,
-    // Freshchat
-    /freshchat\.com/i,
-    /wchat\.freshchat/i,
-    // Crisp
+  const scriptPatterns = [
+    /birdeye\.com/i, /birdeyechat/i, /bewebchat/i,
+    /podium\.com/i, /podiumlibrary/i,
+    /tidio\.com/i, /tidiochat/i,
+    /intercom\.io/i, /intercomcdn/i,
+    /drift\.com/i, /js\.driftt/i,
+    /livechat\.com/i, /livechatinc/i,
+    /zopim\.com/i, /ekr\.zdassets/i,
+    /freshchat\.com/i, /wchat\.freshchat/i,
     /crisp\.chat/i,
-    // HubSpot
-    /hsforms\.com\/livechat/i,
-    /js\.hs-scripts\.com/i,
-    // Gorgias
+    /hsforms\.com\/livechat/i, /js\.hs-scripts\.com/i,
     /gorgias\.com/i,
-    // Tawk
     /tawk\.to/i,
-    // Smartsupp
     /smartsupp\.com/i,
-    // Olark
     /olark\.com/i,
-    // Reamaze
     /reamaze\.com/i,
-    // Kustomer
     /kustomer\.com/i,
   ];
 
-  // Remove <script> tags (inline or external) matching any pattern
-  return html.replace(/<script[\s\S]*?<\/script>/gi, (scriptTag) => {
-    for (const pattern of patterns) {
-      if (pattern.test(scriptTag)) return '<!-- [ZapSight: suppressed competing widget script] -->';
+  // 1. Remove <script> tags matching any competitor pattern
+  let result = html.replace(/<script[\s\S]*?<\/script>/gi, (scriptTag) => {
+    for (const pattern of scriptPatterns) {
+      if (pattern.test(scriptTag)) return '<!-- [ZapSight: suppressed widget script] -->';
     }
     return scriptTag;
   });
+
+  // 2. Remove pre-rendered competitor DOM elements (injected by renderer before snapshot)
+  // Birdeye: removes <div id="bf-revz-widget-*">...</div> and <iframe id="bewebchat">
+  result = result.replace(/<div[^>]*\bid="bf-revz-widget-[^"]*"[^>]*>[\s\S]*?<\/div>/gi,
+    '<!-- [ZapSight: suppressed birdeye widget] -->');
+  result = result.replace(/<iframe[^>]*\bid="bewebchat"[^>]*>[\s\S]*?<\/iframe>/gi,
+    '<!-- [ZapSight: suppressed birdeye iframe] -->');
+  result = result.replace(/<iframe[^>]*\bid="window-iframe"[^>]*\bsrc="[^"]*birdeye[^"]*"[^>]*>[\s\S]*?<\/iframe>/gi,
+    '<!-- [ZapSight: suppressed birdeye chat iframe] -->');
+  // Podium
+  result = result.replace(/<div[^>]*\bid="podium-website-widget"[^>]*>[\s\S]*?<\/div>/gi,
+    '<!-- [ZapSight: suppressed podium widget] -->');
+  // Tidio
+  result = result.replace(/<div[^>]*\bid="tidio-chat[^"]*"[^>]*>[\s\S]*?<\/div>/gi,
+    '<!-- [ZapSight: suppressed tidio widget] -->');
+  // Intercom
+  result = result.replace(/<div[^>]*\bid="intercom-container[^"]*"[^>]*>[\s\S]*?<\/div>/gi,
+    '<!-- [ZapSight: suppressed intercom widget] -->');
+  // Gorgias
+  result = result.replace(/<div[^>]*\bid="gorgias-chat-container[^"]*"[^>]*>[\s\S]*?<\/div>/gi,
+    '<!-- [ZapSight: suppressed gorgias widget] -->');
+  // Drift
+  result = result.replace(/<div[^>]*\bid="drift-widget[^"]*"[^>]*>[\s\S]*?<\/div>/gi,
+    '<!-- [ZapSight: suppressed drift widget] -->');
+
+  return result;
 }
 
 export function injectWidget(html: string, options: InjectionOptions): string {
