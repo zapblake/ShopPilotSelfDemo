@@ -67,6 +67,11 @@ export function injectWidget(html: string, options: InjectionOptions): string {
   #tawkchat-container, .tawk-widget,
   /* Kustomer */
   #kustomer-ui-sdk-iframe,
+  /* Birdeye (note: no 's') */
+  #bewebchat, [id^="bf-revz-widget-"], iframe[src*="birdeye.com"], iframe[src*="webchat.birdeye"],
+  [id*="birdeye"], [class*="birdeye"],
+  /* Podium */
+  #podium-website-widget, iframe[src*="podium.com"], [id*="podium-"], [class*="podium-widget"],
   /* Generic patterns */
   iframe[title*="chat" i]:not(#zapsight-widget-panel),
   iframe[title*="Chat" i]:not(#zapsight-widget-panel),
