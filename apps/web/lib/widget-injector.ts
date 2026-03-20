@@ -58,7 +58,7 @@ export function injectWidget(html: string, options: InjectionOptions): string {
     right: 0 !important;
     top: 50% !important;
     transform: translateY(-50%) !important;
-    z-index: 99999 !important;
+    z-index: 2147483647 !important;
     background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
     color: white !important;
     border: none !important;
@@ -108,7 +108,7 @@ export function injectWidget(html: string, options: InjectionOptions): string {
     width: 380px;
     height: 100vh;
     background: #0f0f1a;
-    z-index: 99998;
+    z-index: 2147483646;
     display: flex;
     flex-direction: column;
     transition: right 0.3s ease;
