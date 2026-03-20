@@ -6,9 +6,68 @@ export interface InjectionOptions {
   skipNoticeBanner?: boolean;
 }
 
+/** Strip third-party chat/support widget script tags from scraped HTML before injection. */
+function stripCompetingScripts(html: string): string {
+  const patterns = [
+    // Birdeye
+    /birdeye\.com/i,
+    /birdeyechat/i,
+    /bewebchat/i,
+    // Podium
+    /podium\.com/i,
+    /podiumlibrary/i,
+    // Tidio
+    /tidio\.com/i,
+    /tidiochat/i,
+    // Intercom
+    /intercom\.io/i,
+    /intercomcdn/i,
+    // Drift
+    /drift\.com/i,
+    /js\.driftt/i,
+    // LiveChat
+    /livechat\.com/i,
+    /livechatinc/i,
+    // Zendesk
+    /zopim\.com/i,
+    /ekr\.zdassets/i,
+    // Freshchat
+    /freshchat\.com/i,
+    /wchat\.freshchat/i,
+    // Crisp
+    /crisp\.chat/i,
+    // HubSpot
+    /hsforms\.com\/livechat/i,
+    /js\.hs-scripts\.com/i,
+    // Gorgias
+    /gorgias\.com/i,
+    // Tawk
+    /tawk\.to/i,
+    // Smartsupp
+    /smartsupp\.com/i,
+    // Olark
+    /olark\.com/i,
+    // Reamaze
+    /reamaze\.com/i,
+    // Kustomer
+    /kustomer\.com/i,
+  ];
+
+  // Remove <script> tags (inline or external) matching any pattern
+  return html.replace(/<script[\s\S]*?<\/script>/gi, (scriptTag) => {
+    for (const pattern of patterns) {
+      if (pattern.test(scriptTag)) return '<!-- [ZapSight: suppressed competing widget script] -->';
+    }
+    return scriptTag;
+  });
+}
+
 export function injectWidget(html: string, options: InjectionOptions): string {
   const { config, apiBaseUrl, skipNoticeBanner } = options;
   const configJson = JSON.stringify(config);
+
+  // Strip competing chat/support scripts before they can inject widgets
+  html = stripCompetingScripts(html);
 
   const widgetHtml = `
 <div id="zapsight-widget-root"></div>
@@ -665,6 +724,57 @@ export function injectWidget(html: string, options: InjectionOptions): string {
   }
 
   logEvent('widget_loaded', { pageType: config.pageContext ? config.pageContext.pageType : 'unknown' });
+
+  // MutationObserver: nuke any competing chat widgets injected after page load
+  (function() {
+    var KILL_SELECTORS = [
+      '#bewebchat', '[id^="bf-revz-widget-"]',
+      '#podium-website-widget', '[id^="podium-"]',
+      '#tidio-chat', '#tidio-chat-iframe',
+      '#intercom-container', '.intercom-lightweight-app',
+      '#drift-widget', '#drift-frame-controller',
+      '#chat-widget-container', '#livechat-compact-container',
+      '#fc_frame', '.crisp-client', '#crisp-chatbox',
+      '#hubspot-messages-iframe-container',
+      '#gorgias-chat-container', '#reamaze-iframe',
+      '#olark-wrapper', '#olark-box-container',
+      '#smartsupp-widget-container',
+      '#tawkchat-container', '.tawk-widget',
+      '#kustomer-ui-sdk-iframe',
+    ];
+    function killEl(el) {
+      if (!el || !el.id || el.id.startsWith('zapsight') || el.id.startsWith('zs-')) return;
+      el.style.setProperty('display', 'none', 'important');
+      el.style.setProperty('visibility', 'hidden', 'important');
+      el.style.setProperty('pointer-events', 'none', 'important');
+      el.style.setProperty('opacity', '0', 'important');
+    }
+    function scanAndKill() {
+      KILL_SELECTORS.forEach(function(sel) {
+        try {
+          document.querySelectorAll(sel).forEach(killEl);
+        } catch(e) {}
+      });
+      // Also kill iframes from known chat domains
+      document.querySelectorAll('iframe').forEach(function(iframe) {
+        var src = iframe.src || '';
+        if (/birdeye\.com|podium\.com|webchat\.birdeye|tawk\.to|tidio\.com|intercom|drift\.com|livechat|freshchat|crisp\.chat|zopim|gorgias|reamaze|olark|smartsupp|kustomer/i.test(src)) {
+          killEl(iframe);
+        }
+      });
+    }
+    // Run once immediately
+    scanAndKill();
+    // Then watch for DOM mutations
+    var observer = new MutationObserver(function(mutations) {
+      var needsScan = false;
+      mutations.forEach(function(m) {
+        if (m.addedNodes.length) needsScan = true;
+      });
+      if (needsScan) scanAndKill();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  })();
 
   // Notice bar is injected server-side (see injectWidget TypeScript code below)
 
