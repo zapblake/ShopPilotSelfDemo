@@ -38,6 +38,55 @@ export function injectWidget(html: string, options: InjectionOptions): string {
     pointer-events: none !important;
   }
 
+  /* === Suppress competing live chat / support widgets === */
+  /* Tidio */
+  #tidio-chat, #tidio-chat-iframe, [id^="tidio"],
+  /* Intercom */
+  #intercom-container, .intercom-lightweight-app, [class*="intercom-"],
+  /* Drift */
+  #drift-widget, #drift-frame-controller, [id^="drift-"],
+  /* LiveChat */
+  #chat-widget-container, #livechat-compact-container, [id^="livechat-"],
+  /* Zendesk */
+  #launcher, iframe[name="Messaging window"],
+  /* Freshchat */
+  #fc_frame, [id^="fc_"],
+  /* Crisp */
+  .crisp-client, #crisp-chatbox,
+  /* HubSpot */
+  #hubspot-messages-iframe-container, .HubSpotConversations-widget--open,
+  /* Gorgias */
+  #gorgias-chat-container,
+  /* Reamaze */
+  #reamaze-iframe,
+  /* Olark */
+  #olark-wrapper, #olark-box-container,
+  /* Smartsupp */
+  #smartsupp-widget-container,
+  /* Tawk.to */
+  #tawkchat-container, .tawk-widget,
+  /* Kustomer */
+  #kustomer-ui-sdk-iframe,
+  /* Generic patterns */
+  iframe[title*="chat" i]:not(#zapsight-widget-panel),
+  iframe[title*="Chat" i]:not(#zapsight-widget-panel),
+  iframe[id*="chat" i]:not(#zapsight-widget-panel),
+  iframe[src*="livechat"]:not(#zapsight-widget-panel),
+  iframe[src*="tidio"]:not(#zapsight-widget-panel),
+  iframe[src*="intercom"]:not(#zapsight-widget-panel),
+  iframe[src*="drift"]:not(#zapsight-widget-panel),
+  iframe[src*="crisp"]:not(#zapsight-widget-panel),
+  iframe[src*="freshchat"]:not(#zapsight-widget-panel),
+  iframe[src*="zendesk"]:not(#zapsight-widget-panel),
+  iframe[src*="hubspot"]:not(#zapsight-widget-panel),
+  iframe[src*="gorgias"]:not(#zapsight-widget-panel),
+  iframe[src*="tawk"]:not(#zapsight-widget-panel) {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    opacity: 0 !important;
+  }
+
   /* When panel is open, push body content left so it's not hidden under the panel */
   body.zs-panel-open {
     margin-right: 380px !important;
